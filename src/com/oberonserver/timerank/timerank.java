@@ -100,7 +100,8 @@ public class timerank extends JavaPlugin
 	{
 		try
 		{
-			Configuration c = getConfiguration();				
+			Configuration c = getConfiguration();
+			c.load();
 			debug = c.getBoolean("settings.debug",false);			
 			hideUnavaible = c.getBoolean("settings.hideUnavaible",false);
 			List<String> keys = c.getKeys("ranks");
@@ -126,14 +127,16 @@ public class timerank extends JavaPlugin
 				else
 					rank.cost	= c.getInt(node+".cost", -1);
 				rank.amount		= c.getDouble(node+".amount", 1);
+				rank.minTime		= c.getInt(node+".minTime", -1);				
 				rank.broadcast	= c.getBoolean(node+".broadcast", true);
-				rank.msg		= c.getString(node+".msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
+				rank.msg		= c.getString(node+".msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");				
 				
 				//Rent stuff
 				if (c.getString(node+".rentCost","").equalsIgnoreCase("money"))
 					rank.rentCost=0;
 				else
 					rank.rentCost	= c.getInt(node+".rentCost", -1);
+				rank.rentMinTime	= c.getInt(node+".rentMinTime", -1);
 				rank.rentAmount		= c.getDouble(node+".rentAmount", 1);
 				rank.rentBroadcast	= c.getBoolean(node+".rentBroadcast", true);
 				rank.rentGainedMsg	= c.getString(node+".rentGainedMsg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
@@ -299,7 +302,7 @@ public class timerank extends JavaPlugin
 			int curItem = -1;
 			int startItem = ((iPage-1) * perPage);			
 			
-			sender.sendMessage("§B---------------Rank List---------------"+iPage);
+			sender.sendMessage("§B---------------Rank List---------------");
 			for(Rank r : Ranks.keySet())
 			{													
 				if ( hideUnavaible )
@@ -545,7 +548,8 @@ public class timerank extends JavaPlugin
 			if (r.name.equalsIgnoreCase(rankname))
 			{//found the rank we are looking for. See if it is for sale		
 				DebugPrint(rankname + " found. Checking cost: " +r.cost);
-				if (r.cost>=0)
+				//Check if we have passed the minimum time				
+				if (r.cost>=0 && r.minTime < GetPlaytime(player.getName()))
 				{
 					if (r.cost==0)
 					{//use money
@@ -579,40 +583,41 @@ public class timerank extends JavaPlugin
 							player.sendMessage("You don't have enough items. You need at least " + Method.format(r.amount));
 						}
 					}
-				}
-				else
-				{//use block id				
-					DebugPrint(rankname + " Using block "+ r.cost +" for cost");
-					ItemStack item = new ItemStack(r.cost, (int) r.amount);
-					if (player.getInventory().contains(item))
-					{
-						DebugPrint("You have the required items");															
-								switch(PromotePlayer(player,r))
-								{
-								case 0://Everything went fine
-									player.getInventory().remove(item); //Consume items.
-									Map<String, String> replace = new HashMap<String, String>();				
-									replace.putAll(ProcessMsgVars(player));
-									replace.putAll(ProcessMsgVars(r));
-									String msg = ProcessMsg(r.msg, replace);
-									if (r.broadcast)				
-										getServer().broadcastMessage(msg);
-									else
-										player.sendMessage(msg);
-									break;
-								case 1://Not in old group
-									player.sendMessage("You need to be in " + r.GetOldGroup().getName() + " to be buy the rank "+r.name);
-									break;
-								case 2:
-									player.sendMessage("You are already in " + r.GetGroup() +" which " + r.name + " grants.");
-									break;	
-								}//end switch
-					}//end player has items check
+				
 					else
-					{							
-						player.sendMessage("You don't have enough items. You need at least " + r.amount + " of " + Material.getMaterial(r.cost));
-					}
-				}//end check to see if we are using money
+					{//use block id				
+						DebugPrint(rankname + " Using block "+ r.cost +" for cost");
+						ItemStack item = new ItemStack(r.cost, (int) r.amount);						
+						if (player.getInventory().contains(item))
+						{
+							DebugPrint("You have the required items");															
+									switch(PromotePlayer(player,r))
+									{
+									case 0://Everything went fine
+										player.getInventory().remove(item); //Consume items.
+										Map<String, String> replace = new HashMap<String, String>();				
+										replace.putAll(ProcessMsgVars(player));
+										replace.putAll(ProcessMsgVars(r));
+										String msg = ProcessMsg(r.msg, replace);
+										if (r.broadcast)				
+											getServer().broadcastMessage(msg);
+										else
+											player.sendMessage(msg);
+										break;
+									case 1://Not in old group
+										player.sendMessage("You need to be in " + r.GetOldGroup().getName() + " to be buy the rank "+r.name);
+										break;
+									case 2:
+										player.sendMessage("You are already in " + r.GetGroup() +" which " + r.name + " grants.");
+										break;	
+									}//end switch
+						}//end player has items check
+						else
+						{							
+							player.sendMessage("You don't have enough items. You need at least " + r.amount + " of " + Material.getMaterial(r.cost));
+						}
+					}//end check to see if we are using money/block
+				}
 			}//end check to see if we can buy this
 		}//end check of rank name
 	}

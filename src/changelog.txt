@@ -1,3 +1,9 @@
+Version 0.0.8
+	Fixed reload option to reload config instead of needing a reboot.
+	Fixed not being able to buy ranks when using blocks.
+	Added minTime node to require a minimum time before being able to buy a rank
+	Added rentMinTime node to require a minimum time before being able to rent a rank.
+	
 Version 0.0.7b
 	Fixed bug where people were removed from the group right after adding them to it.
 	
