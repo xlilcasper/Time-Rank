@@ -1,0 +1,54 @@
+Version 0.0.7a
+	Fixed bad bug where it made a folder for each player in the permissions folder.
+	
+Version 0.0.7
+	A lot of small bug fixes.
+	Added timer to handle rank up checks, checks every 10 seconds, instead of using player animation
+	Added ability to rent ranks and all the goodies that go with that
+	Made it easier to work with single permission nodes for when buying single nods gets added in
+	Added filters to /ranklist. Now it is /ranklist <time|buy|rent> to only show that group.
+	Added /timerank groups to list more (Admin) information about groups. Works with the same filters as /ranklist
+	
+Version 0.0.6
+	Made OldGroup optional. Now if it is not specified it will always promote them if available.
+	Added BroadCast to ranks, allows turning server broadcasts off when a person is promoted. If off, will only msg the person who was promoted.
+	Added msg to ranks, configurable message for when a player gains a rank.
+	
+Version 0.0.5d
+	Fixed a bug added in 0.0.5 that would only allow people to be promoted to first group listed in config,
+	Fixed /timerank reload causing errors.
+	Added in some more error handling.
+	
+Version 0.0.5c
+	Really fixed this time. Made a typo that stopped permissions from loading.
+	
+Version 0.0.5b
+	Fixed for latest permissions
+	
+Version 0.0.5a
+	Fixed detecting Group Manager
+	
+Version 0.0.5
+	Added auto detection of permissions plugin. Now ignores the permissions setting.
+	Added in support for globalUsers and globalGroups if no world is given.
+	Reformated /timerank to show settings.
+	Added /timerank reload 
+	
+Version 0.0.4
+	Added /timerank to show version and as a place holder for other commands.
+	Added support for group manager.
+		
+Version 0.0.3
+	Added /listranks to display all the ranks you can buy
+	Added support for iConomy 4, iConomy 5, EssentialsEco, and BOSEconomy
+
+Version 0.0.2
+	Added ability to buy ranks.
+	Made it save play times on world save in case server crashed or was stopped.
+	Added check a single players rank when they run animations. This way they get promoted sooner after they reach the right time
+	Added Settings node and settings.debug to the config file instead of setting debug in the source.
+	Changed name of plugin from Time Rank to TimeRank. Folder must be renamed.
+	Made it handle reloads with out losing player times.
+
+Version 0.0.1
+	Released

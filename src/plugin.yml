@@ -1,0 +1,23 @@
+name: TimeRank
+main: com.oberonserver.timerank.timerank
+version: 0.0.7
+commands:
+    playtime:
+        description: Displays current play time of a player.
+        usage: /playtime <player>
+    listranks:
+        description: List ranks and there requirements
+        usage: /listranks <filter>
+    buyrank:
+        description: Buy a listed rank
+        usage: /buyrank <rank>
+    rentrank:
+        description: Rents a listed rank
+        usage: /rentrank <rank>
+    checkranks:
+        description: Check ranks and promote if needed
+        usage: /checkranks
+    timerank:
+        description: Controles the timerank plugin
+        usage: /timerank <command>
+    
