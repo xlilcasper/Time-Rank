@@ -41,19 +41,23 @@ public class Perm3 implements PermMethod{
 			plugin.DebugPrint("Error in AddGroup. Could not create group: " + parentName + " in world " + parentWorld);
 			return;
 		}
-		plugin.DebugPrint("Adding '" + name + "' in world '" + world + "' to group '" + parentName + "' in world '" + parentWorld+"'");
-		entry.addParent(parent);		    
+		plugin.DebugPrint("Adding '" + name + "' in world '" + world + "' to group '" + parentName + "' in world '" + parentWorld+"'");		
+		entry.addParent(parent);		
 	}	
 	
 	public void RemoveGroup(String world, String name, String parentWorld, String parentName)
 	{
 		Entry entry = getHandler().getUserObject(world, name);
 		if (entry == null)
-			plugin.DebugPrint("Error in AddGroup. Could not create user: " + name + " in world " + world);
+			plugin.DebugPrint("Error in RemoveGroup. Could not create user: " + name + " in world " + world);
 		Group parent = getHandler().getGroupObject(parentWorld, parentName);
 		if (parent == null)
-			plugin.DebugPrint("Error in AddGroup. Could not create group: " + parentName + " in world " + parentWorld);
+			plugin.DebugPrint("Error in RemoveGroup. Could not create group: " + parentName + " in world " + parentWorld);
 		entry.removeParent(parent);
+		if (inGroup(plugin.getServer().getPlayer(name),parentWorld,parentName))
+		{
+			plugin.DebugPrint("Something went wrong adding '" + name + "' in world '" + world + "' to group '" + parentName + "' in world '" + parentWorld+"'");
+		}
 	}
 	
 	public boolean inGroup(Player p, String parentWorld, String parentName)

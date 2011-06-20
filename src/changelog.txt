@@ -1,3 +1,6 @@
+Version 0.0.7b
+	Fixed bug where people were removed from the group right after adding them to it.
+	
 Version 0.0.7a
 	Fixed bad bug where it made a folder for each player in the permissions folder.
 	

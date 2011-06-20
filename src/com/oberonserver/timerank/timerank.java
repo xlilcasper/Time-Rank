@@ -238,6 +238,8 @@ public class timerank extends JavaPlugin
 					return true;
 				}
 			}
+			
+			//see if they are just not loaded yet.
 			File path = new File(mainDirectory+File.separator+"data"+File.separator+playername);
 			if (path.exists())
 			{
@@ -716,9 +718,10 @@ public class timerank extends JavaPlugin
 			
 			DebugPrint("PromotePlayer: " + p.getName() + " is ready to be promoted.");
 			//everything looks good. Lets promote!				
-			perms.AddGroup(p, r.GetGroup().getWorld(),r.GetGroup().getName());
+			perms.AddGroup(p, r.GetGroup().getWorld(),r.GetGroup().getName());	
+				
 			if (r.remove && r.GetOldGroup() != null)
-				perms.RemoveGroup(p.getWorld().getName(),p.getName(), r.GetGroup().getWorld(),r.GetGroup().getName());
+				perms.RemoveGroup(p.getWorld().getName(),p.getName(), r.GetOldGroup().getWorld(),r.GetOldGroup().getName());
 			//getServer().broadcastMessage(ChatColor.AQUA + p.getName() + ChatColor.YELLOW + " has been promoted to " + ChatColor.AQUA + r.GetGroup().getName());
 			return 0;													
 		}
@@ -788,7 +791,7 @@ public class timerank extends JavaPlugin
 				if (pa.durationTicks <= 0)
 				{//Rent ran out. Demote back to orginal group.
 					DebugPrint("Demoting " + p.getName());
-					perms.RemoveGroup(p.getWorld().getName(), p.getName(), pa.rank.GetGroup().getWorld(), pa.rank.GetGroup().getName());
+					perms.RemoveGroup(p.getWorld().getName(), p.getName(), pa.rank.GetOldGroup().getWorld(), pa.rank.GetOldGroup().getName());
 					if (pa.rank.rentReturn && pa.rank.GetOldGroup() != null)
 						perms.AddGroup(p, pa.rank.GetGroup().getWorld(), pa.rank.GetGroup().getName());
 					Map<String, String> replace = new HashMap<String, String>();				
