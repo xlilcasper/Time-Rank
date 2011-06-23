@@ -1,3 +1,14 @@
+To Do
+	Add in description field
+	Add ability to buy permission node instead of full group.
+	
+
+Version 0.0.9
+	Fixed bug when loading play times and it coming back null.
+	Added message to reload command to let you know it worked.
+	Added better error messages, trapped a few more errors.
+	Preserved ordering for rank list so that /listranks is printed in a logical order. 
+	
 Version 0.0.8
 	Fixed reload option to reload config instead of needing a reboot.
 	Fixed not being able to buy ranks when using blocks.

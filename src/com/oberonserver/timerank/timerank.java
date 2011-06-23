@@ -5,12 +5,15 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +50,7 @@ public class timerank extends JavaPlugin
 	public Map<String, Long> StartTime = new HashMap<String, Long>();
 	public Map<String, Long> PlayTime = new HashMap<String, Long>();
 	public List<PurchasedAbility> RentedAbilities;
-	public Map<Rank, Long> Ranks = new HashMap<Rank, Long>();	
+	public Map<Rank, Long> Ranks = new LinkedHashMap<Rank, Long>();	
 	public Method Method = null;
 	public PermMethod perms;
 	public String permissions = "Permissions3"; 
@@ -80,7 +83,8 @@ public class timerank extends JavaPlugin
 			loadPlaytime(p.getName());
 		}
 		checker = new TimeRankChecker(this, checkInterval);
-		getServer().getScheduler().scheduleAsyncRepeatingTask(this, checker, checkDelay, checkInterval);
+		//getServer().getScheduler().scheduleAsyncRepeatingTask(this, checker, checkDelay, checkInterval);
+		getServer().getScheduler().scheduleSyncRepeatingTask(this, checker, checkDelay, checkInterval);
 		
 		RentedAbilities = new LinkedList<PurchasedAbility>();
 		log.info("[Time Rank] Version " + this.getDescription().getVersion() + "Enabled.");
@@ -151,7 +155,7 @@ public class timerank extends JavaPlugin
 			}
 			
 		}catch(Exception e){
-			e.printStackTrace();
+			ThrowSimpleError(e);
 			
 		}
 		
@@ -171,14 +175,14 @@ public class timerank extends JavaPlugin
 		            		perms = new com.oberonserver.perms.methods.Perm3(this);		            	
 		            		log.info("[Time Rank] Using Permissions 3.x");
 			            }catch(Exception e){
-			            	PluginManager pm = this.getServer().getPluginManager();	
-			            	log.info("--------------------------------------");
-			            	log.info("[Time Rank] Set to use Permissions 3.x but something went wrong.");
-			            	log.info("[Time Rank] Name: " + pm.getPlugin("Permissions").getDescription().getFullName());
-			            	log.info("[Time Rank] Version: " + pm.getPlugin("Permissions").getDescription().getVersion());
-			            	log.info("[Time Rank] Depend: " + pm.getPlugin("Permissions").getDescription().getDepend());			            	
-			            	log.info("--------------------------------------");
-			            	e.printStackTrace();
+			            	PluginManager pm = this.getServer().getPluginManager();
+			            				            	
+			            	Map<String,String>ErrorInfo = new HashMap<String,String>();
+			            	ErrorInfo.put("Error message:", "Set to use Permissions 3.x but something went wrong.");
+			            	ErrorInfo.put("Depend", pm.getPlugin("Permissions").getDescription().getDepend().toString());
+			            	ErrorInfo.put("Permissions version", pm.getPlugin("Permissions").getDescription().getVersion().toString());
+			            	ErrorLog(ErrorInfo);
+			            	
 			    		}
 		            }
 		            else if (permissions.equalsIgnoreCase("GroupManager"))
@@ -189,7 +193,8 @@ public class timerank extends JavaPlugin
 		            }
 		            
 		        } else {
-		            System.out.println("[Time Rank] Permission system not detected, defaulting to OP");
+		            System.out.println("[Time Rank] Permission system not detected. Something went wrong.");
+		            System.out.println("[Time Rank] Make sure you are using Permisions 3.x or GroupManager.");
 		        }
 		    }
 	}
@@ -197,186 +202,122 @@ public class timerank extends JavaPlugin
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args)
 	{
-		Player player = null;
-		//String[] split = args;
-		if(sender instanceof Player)
+		try
 		{
-			player = (Player) sender;
-			//Check permissions. Node should be timerank.<command name>
-			if(!perms.HasPermission(player,"timerank."+cmd.getName()))
-			{
-				if(sender instanceof Player)
-					sender.sendMessage("§4You do not have permission to run this command");
-				return true;
-			}
-		}
-		//We have permission to run the command.
-		
-		if (cmd.getName().equalsIgnoreCase("playtime")) //Check which command we ran.
-		{
-			String playername="";
+			Player player = null;
+			//String[] split = args;
 			if(sender instanceof Player)
-				playername = player.getDisplayName(); 
-			
-			if (args.length > 0)
-				playername = args[0];
-			
-			for(String p : PlayTime.keySet())
 			{
-				if (p.equalsIgnoreCase(playername))
-				{//Name or display name matches
-					if(sender instanceof Player)
-						player.sendMessage(p + " has been playing for " + Mills2Time(GetPlaytime(p)));
-					else
-						log.info(p + " has been playing for " + Mills2Time(GetPlaytime(p)));
-					return true;
-				}
-			}			
-			//Player not found in list see if it is there first connect.
-			for(String p : StartTime.keySet())
-			{
-				if (p.equalsIgnoreCase(playername))
-				{//Name or display name matches
-					sender.sendMessage(p + " has been playing for " + Mills2Time(GetPlaytime(p)));
-					return true;
-				}
-			}
-			
-			//see if they are just not loaded yet.
-			File path = new File(mainDirectory+File.separator+"data"+File.separator+playername);
-			if (path.exists())
-			{
-				loadPlaytime(playername);				
-				sender.sendMessage(playername + " has been playing for " + Mills2Time(GetPlaytime(playername)));				
-			}
-				sender.sendMessage(playername + " could not be found");
-		}		
-		else if (cmd.getName().equalsIgnoreCase("checkranks"))
-		{
-			sender.sendMessage("Promoted " + CheckRanks(getServer().getOnlinePlayers()) + " people.");
-			return true;
-		}		
-		else if (cmd.getName().equalsIgnoreCase("buyrank"))
-		{
-			if(!(sender instanceof Player))
-			{
-				log.info("This command must be run in game.");
-				return false;
-			}
-			
-			if (args.length < 1)
-				return false;			
-			String rankname = args[0];
-			DebugPrint(player.getName() + " is trying to buy "+rankname);
-			BuyRank(player,rankname);
-			return true;
-		}
-		else if (cmd.getName().equalsIgnoreCase("rentrank"))
-		{
-			if(!(sender instanceof Player))
-			{
-				log.info("This command must be run in game.");
-				return false;
-			}
-			
-			if (args.length < 1)
-				return false;			
-			String rankname = args[0];
-			DebugPrint(player.getName() + " is trying to rent "+rankname);
-			RentRank(player,rankname);
-			return true;
-		}
-		else if (cmd.getName().equalsIgnoreCase("listranks"))
-		{
-			String sCmd ="";
-			int iPage=-1;
-			if (args.length > 0)
-				if (!isParsableToInt(args[0]))					
-					sCmd = args[0];
-				else
-					iPage = Integer.parseInt(args[0]);
-			if ((args.length > 1) && (isParsableToInt(args[1])))
-				iPage = Integer.parseInt(args[1]);
-			//iPage -= 1;
-			int perPage = 5;
-			int curItem = -1;
-			int startItem = ((iPage-1) * perPage);			
-			
-			sender.sendMessage("§B---------------Rank List---------------");
-			for(Rank r : Ranks.keySet())
-			{													
-				if ( hideUnavaible )
-					if (!perms.inGroup(player,r.GetOldGroup().getWorld(), r.GetOldGroup().getName())&& !r.GetOldGroup().getName().equals(""))
-					{
-						DebugPrint("Hidding " + r.name + " from " + player.getName());
-						continue;
-					}
-				if (sCmd.equalsIgnoreCase("time"))
-					if (r.time<=0)
-						continue;
-				
-				if (sCmd.equalsIgnoreCase("buy"))
-					if (r.cost<0)
-						continue;
-				
-				if (sCmd.equalsIgnoreCase("rent"))
-					if (r.rentCost<0)
-						continue;
-				curItem +=1;
-				if (iPage >= 0)
+				player = (Player) sender;
+				//Check permissions. Node should be timerank.<command name>
+				if(!perms.HasPermission(player,"timerank."+cmd.getName()))
 				{
-					if (curItem <= startItem)
-						continue;
-					if (curItem > iPage * perPage)
-						continue;
+					if(sender instanceof Player)
+						sender.sendMessage("§4You do not have permission to run this command");
+					return true;
+				}
+			}
+			//We have permission to run the command.
+			
+			if (cmd.getName().equalsIgnoreCase("playtime")) //Check which command we ran.
+			{
+				String playername="";
+				if(sender instanceof Player)
+					playername = player.getDisplayName(); 
+				
+				if (args.length > 0)
+					playername = args[0];
+				
+				for(String p : PlayTime.keySet())
+				{
+					if (p.equalsIgnoreCase(playername))
+					{//Name or display name matches
+						if(sender instanceof Player)
+							player.sendMessage(p + " has been playing for " + Mills2Time(GetPlaytime(p)));
+						else
+							log.info(p + " has been playing for " + Mills2Time(GetPlaytime(p)));
+						return true;
+					}
+				}			
+				//Player not found in list see if it is there first connect.
+				for(String p : StartTime.keySet())
+				{
+					if (p.equalsIgnoreCase(playername))
+					{//Name or display name matches
+						sender.sendMessage(p + " has been playing for " + Mills2Time(GetPlaytime(p)));
+						return true;
+					}
 				}
 				
-				String msg="§A"+r.name + " - ";
+				//see if they are just not loaded yet.
+				File path = new File(mainDirectory+File.separator+"data"+File.separator+playername);
+				if (path.exists())
+				{
+					loadPlaytime(playername);				
+					sender.sendMessage(playername + " has been playing for " + Mills2Time(GetPlaytime(playername)));				
+				}
+					sender.sendMessage(playername + " could not be found");
+			}		
+			else if (cmd.getName().equalsIgnoreCase("checkranks"))
+			{
+				sender.sendMessage("Promoted " + CheckRanks(getServer().getOnlinePlayers()) + " people.");
+				return true;
+			}		
+			else if (cmd.getName().equalsIgnoreCase("buyrank"))
+			{
+				if(!(sender instanceof Player))
+				{
+					log.info("This command must be run in game.");
+					return false;
+				}
 				
-				if (r.time>0)
-					msg+="§BTime: §A" + Mills2Time(r.time) + " ";
-				if (r.cost>0)
-					msg+="§BBuy Cost: §A" +  r.amount+ " " + Material.getMaterial(r.cost)+ " ";
-				if (r.cost==0)
-					msg+="§BBuy Cost: §A" +  Method.format(r.amount)+ " ";					
-				if (r.rentCost>0)
-					msg+="§BRent Cost: §A" +  r.rentAmount+ " " + Material.getMaterial(r.rentCost)+ " ";
-				if (r.rentCost==0)
-					msg+="§BRent Cost: §A" +  Method.format(r.rentAmount)+ " ";
-				if (r.GetOldGroup() != null)
-					msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";
-				sender.sendMessage(msg);				
-			}
-			sender.sendMessage("§B-----------------------------------------");
-			return true;
-		}
-		else if (cmd.getName().equalsIgnoreCase("timerank"))
-		{
-			if (args.length<1)
-			{
-				sender.sendMessage("§B---------------Time Rank---------------");
-				sender.sendMessage("§BVersion: §A"+this.getDescription().getVersion());
-				sender.sendMessage("§BDebug: §A"+this.debug);
-				sender.sendMessage("§BPermissions: §A"+this.permissions);
-				sender.sendMessage("§BHide Unavaible: §A"+this.hideUnavaible );				
-				sender.sendMessage("§B-----------------------------------------");				
+				if (args.length < 1)
+					return false;			
+				String rankname = args[0];
+				DebugPrint(player.getName() + " is trying to buy "+rankname);
+				BuyRank(player,rankname);
 				return true;
 			}
-			else if (args[0].equalsIgnoreCase("reload"))
+			else if (cmd.getName().equalsIgnoreCase("rentrank"))
 			{
-				Ranks.clear();
-				Ranks = new HashMap<Rank, Long>();
-				loadConfig();
+				if(!(sender instanceof Player))
+				{
+					log.info("This command must be run in game.");
+					return false;
+				}
+				
+				if (args.length < 1)
+					return false;			
+				String rankname = args[0];
+				DebugPrint(player.getName() + " is trying to rent "+rankname);
+				RentRank(player,rankname);
 				return true;
 			}
-			else if (args[0].equalsIgnoreCase("groups"))
+			else if (cmd.getName().equalsIgnoreCase("listranks"))
 			{
 				String sCmd ="";
-				if (args.length > 1)
-					sCmd = args[1];	
-				sender.sendMessage("§B-----------Advanced Rank List-----------");				
+				int iPage=-1;
+				if (args.length > 0)
+					if (!isParsableToInt(args[0]))					
+						sCmd = args[0];
+					else
+						iPage = Integer.parseInt(args[0]);
+				if ((args.length > 1) && (isParsableToInt(args[1])))
+					iPage = Integer.parseInt(args[1]);
+				//iPage -= 1;
+				int perPage = 5;
+				int curItem = -1;
+				int startItem = ((iPage-1) * perPage);			
+				
+				sender.sendMessage("§B---------------Rank List---------------");
 				for(Rank r : Ranks.keySet())
-				{						
+				{													
+					if ( hideUnavaible )
+						if (!perms.inGroup(player,r.GetOldGroup().getWorld(), r.GetOldGroup().getName())&& !r.GetOldGroup().getName().equals(""))
+						{
+							DebugPrint("Hidding " + r.name + " from " + player.getName());
+							continue;
+						}
 					if (sCmd.equalsIgnoreCase("time"))
 						if (r.time<=0)
 							continue;
@@ -388,69 +329,147 @@ public class timerank extends JavaPlugin
 					if (sCmd.equalsIgnoreCase("rent"))
 						if (r.rentCost<0)
 							continue;
+					curItem +=1;
+					if (iPage >= 0)
+					{
+						if (curItem <= startItem)
+							continue;
+						if (curItem > iPage * perPage)
+							continue;
+					}
 					
 					String msg="§A"+r.name + " - ";
+					
 					if (r.time>0)
-						msg+="§BTime: §A" +Mills2Time(r.time) + " ";
+						msg+="§BTime: §A" + Mills2Time(r.time) + " ";
 					if (r.cost>0)
-						msg+="§BCost: §A" + r.amount+ " " + Material.getMaterial(r.cost)+ " ";
+						msg+="§BBuy Cost: §A" +  r.amount+ " " + Material.getMaterial(r.cost)+ " ";
 					if (r.cost==0)
-						msg+="§BCost: §A" + Method.format(r.amount)+ " ";
-					msg+="§BGroup: §A" + r.GetGroup().getName()+ " ";
+						msg+="§BBuy Cost: §A" +  Method.format(r.amount)+ " ";					
+					if (r.rentCost>0)
+						msg+="§BRent Cost: §A" +  r.rentAmount+ " " + Material.getMaterial(r.rentCost)+ " ";
+					if (r.rentCost==0)
+						msg+="§BRent Cost: §A" +  Method.format(r.rentAmount)+ " ";
 					if (r.GetOldGroup() != null)
-						msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";				
+						msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";
 					sender.sendMessage(msg);				
 				}
 				sender.sendMessage("§B-----------------------------------------");
 				return true;
 			}
-			else if (args[0].equalsIgnoreCase("group"))
+			else if (cmd.getName().equalsIgnoreCase("timerank"))
 			{
-				sender.sendMessage("§B-----------Advanced Rank List-----------");
-				for(Rank r : Ranks.keySet())
-				{				
-					if (r.name.equalsIgnoreCase(args[1]))
-					{
+				if (args.length<1)
+				{
+					sender.sendMessage("§B---------------Time Rank---------------");
+					sender.sendMessage("§BVersion: §A"+this.getDescription().getVersion());
+					sender.sendMessage("§BDebug: §A"+this.debug);
+					sender.sendMessage("§BPermissions: §A"+this.permissions);
+					sender.sendMessage("§BHide Unavaible: §A"+this.hideUnavaible );				
+					sender.sendMessage("§B-----------------------------------------");				
+					return true;
+				}
+				else if (args[0].equalsIgnoreCase("reload"))
+				{
+					Ranks.clear();
+					Ranks = new HashMap<Rank, Long>();
+					loadConfig();
+					sender.sendMessage("§B[TimeRank] Timerank has been reloaded.");
+					return true;
+				}
+				else if (args[0].equalsIgnoreCase("groups"))
+				{
+					String sCmd ="";
+					if (args.length > 1)
+						sCmd = args[1];	
+					sender.sendMessage("§B-----------Advanced Rank List-----------");				
+					for(Rank r : Ranks.keySet())
+					{						
+						if (sCmd.equalsIgnoreCase("time"))
+							if (r.time<=0)
+								continue;
+						
+						if (sCmd.equalsIgnoreCase("buy"))
+							if (r.cost<0)
+								continue;
+						
+						if (sCmd.equalsIgnoreCase("rent"))
+							if (r.rentCost<0)
+								continue;
+						
 						String msg="§A"+r.name + " - ";
 						if (r.time>0)
-							msg+="§BTime: §A" + Mills2Time(r.time) + " ";
+							msg+="§BTime: §A" +Mills2Time(r.time) + " ";
 						if (r.cost>0)
-							msg+="§BCost: §A" +  r.amount+ " " + Material.getMaterial(r.cost)+ " ";
+							msg+="§BCost: §A" + r.amount+ " " + Material.getMaterial(r.cost)+ " ";
 						if (r.cost==0)
-							msg+="§BCost: §A" +  Method.format(r.amount)+ " ";
-						msg+="§BGroup: §A" +  r.GetGroup().getName()+ " ";
+							msg+="§BCost: §A" + Method.format(r.amount)+ " ";
+						msg+="§BGroup: §A" + r.GetGroup().getName()+ " ";
 						if (r.GetOldGroup() != null)
-							msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";					
-						sender.sendMessage(msg);									
+							msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";				
+						sender.sendMessage(msg);				
 					}
 					sender.sendMessage("§B-----------------------------------------");
 					return true;
 				}
-			}
-			else if (args[0].equalsIgnoreCase("test"))
-			{
-				Class<Rank> rClass = Rank.class;
-				Field[] methods = rClass.getFields();
-				for(Field f : methods)
+				else if (args[0].equalsIgnoreCase("group"))
 				{
+					sender.sendMessage("§B-----------Advanced Rank List-----------");
 					for(Rank r : Ranks.keySet())
-					{
-						try {
-							DebugPrint(r.name + ":" + f.getName() + " = " + f.get(r));
-						} catch (IllegalArgumentException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						} catch (IllegalAccessException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+					{				
+						if (r.name.equalsIgnoreCase(args[1]))
+						{
+							String msg="§A"+r.name + " - ";
+							if (r.time>0)
+								msg+="§BTime: §A" + Mills2Time(r.time) + " ";
+							if (r.cost>0)
+								msg+="§BCost: §A" +  r.amount+ " " + Material.getMaterial(r.cost)+ " ";
+							if (r.cost==0)
+								msg+="§BCost: §A" +  Method.format(r.amount)+ " ";
+							msg+="§BGroup: §A" +  r.GetGroup().getName()+ " ";
+							if (r.GetOldGroup() != null)
+								msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";					
+							sender.sendMessage(msg);									
 						}
+						sender.sendMessage("§B-----------------------------------------");
+						return true;
 					}
 				}
+				else if (args[0].equalsIgnoreCase("test"))
+				{
+					Class<Rank> rClass = Rank.class;
+					Field[] methods = rClass.getFields();
+					for(Field f : methods)
+					{
+						for(Rank r : Ranks.keySet())
+						{
+							try {
+								DebugPrint(r.name + ":" + f.getName() + " = " + f.get(r));
+							} catch (IllegalArgumentException e) {
+								ThrowSimpleError(e);
+							} catch (IllegalAccessException e) {
+								ThrowSimpleError(e);
+							}
+						}
+					}
+					
+				    return true;
+				}
+				            
 				
-			    return true;
 			}
-			            
-			
+		}catch(Exception e)
+		{
+			Map<String,String>ErrorInfo = new HashMap<String,String>();
+			//CommandSender sender, Command cmd, String commandLabel, String[] args
+			ErrorInfo.put("Msg", "Error running command.");
+			ErrorInfo.put("CMD", cmd.toString());
+			ErrorInfo.put("Label", commandLabel);
+			ErrorInfo.put("CMD", cmd.toString());
+			ErrorInfo.put("Arguments",Integer.toString(args.length));
+			ErrorInfo.put("Args",arrayToString(args, " "));
+			ErrorInfo.put("Trace",StracktraceToString(e));
+			ErrorLog(ErrorInfo);
 		}
 		return false;
 	}			
@@ -507,7 +526,7 @@ public class timerank extends JavaPlugin
 			hashfile.close();
 		//Something went wrong
 		}catch(Exception e){
-			e.printStackTrace();
+			ThrowSimpleError(e);
 		}
 	}
 	
@@ -525,11 +544,39 @@ public class timerank extends JavaPlugin
 			try{
 				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path.getPath()));
 				prop.load(ois);
-				PlayTime.put(name,Long.parseLong(prop.getProperty("time")) );
+				if (prop.getProperty("time") != null)
+					PlayTime.put(name,Long.parseLong(prop.getProperty("time")) );
+				else
+				{
+					DebugPrint("Problem loading playtime, returned null for "+name+". Setting it to 0");
+					DebugPrint("Problem loading playtime, returned null for "+name+". Setting it to 0");
+				}
 			}catch(Exception e){
-				e.printStackTrace();
+				DebugPrint("Error loading playtime. Setting it to 0");
+				PlayTime.put(name,(long) 0);
+				ThrowSimpleError(e);
+				
 			}
 		}
+		else
+		{
+			DebugPrint("Playtime not found for "+name+". Setting it to 0.");
+			PlayTime.put(name,(long) 0);
+		}
+	}
+	
+	public void ThrowSimpleError(Exception e)
+	{
+		Map<String, String>ErrorInfo= new HashMap<String,String>();
+		ErrorInfo.put("Trace", StracktraceToString(e));
+		ErrorLog(ErrorInfo);
+	}
+	
+	public String StracktraceToString(Exception e)	
+	{
+		StringWriter sw = new StringWriter();
+		e.printStackTrace(new PrintWriter(sw));
+		return sw.toString();
 	}
 	
 	public void DebugPrint(String msg)
@@ -538,6 +585,41 @@ public class timerank extends JavaPlugin
 			log.info("[Time Rank] " + msg);
 	}	
 	
+	public void ErrorLog(Map<String, String> ErrorList)
+	{
+		log.severe("===================================================");
+	    log.severe("=              ERROR REPORT START                 =");
+	    log.severe("===================================================");
+	    log.severe("=               TIME RANK ERROR                   =");
+	    log.severe("=         INCLUDE WHEN ASKING FOR HELP            =");
+	    log.severe("===================================================");
+	    log.severe("Version: "+this.getDescription().getVersion());
+	    log.severe("Permissions: "+this.permissions);
+	    log.severe("Ranks Loaded: "+Ranks.size());
+	    if (ErrorList != null)
+	    {
+	    	log.severe("===================ERROR INFO===================");
+	    	for (String key:ErrorList.keySet())
+	    	{
+	    		log.severe(key + ": " + ErrorList.get(key));
+	    	}
+	    }	    
+	    log.severe("===================================================");
+	    log.severe("=              ERROR REPORT ENDED                 =");
+	    log.severe("===================================================");
+	}
+	
+	public static String arrayToString(String[] a, String separator) {
+	    StringBuffer result = new StringBuffer();
+	    if (a.length > 0) {
+	        result.append(a[0]);
+	        for (int i=1; i<a.length; i++) {
+	            result.append(separator);
+	            result.append(a[i]);
+	        }
+	    }
+	    return result.toString();
+	}
 
 	public void BuyRank(Player player, String rankname)
 	{		
@@ -850,8 +932,7 @@ public class timerank extends JavaPlugin
 			Date d = format.parse(time);
 			return d.getTime();
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			ThrowSimpleError(e);
 			return 0;
 		}		
 	}
@@ -942,10 +1023,8 @@ public class timerank extends JavaPlugin
 			try {
 				replace.put("rank."+f.getName(),f.get(r).toString());
 			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
 				DebugPrint("Can not get property " + f.getName());
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
 				DebugPrint("Can not get property " + f.getName());
 			}			
 		}
