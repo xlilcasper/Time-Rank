@@ -66,4 +66,11 @@ public class Perm3 implements PermMethod{
 		
 	}
 	
+	public boolean isGroup(String world, String name)
+	{
+		Group parent = getHandler().getGroupObject(world, name);
+		if (parent == null)
+			return false;
+		return true;
+	}
 }

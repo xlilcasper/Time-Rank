@@ -62,6 +62,8 @@ public class timerank extends JavaPlugin
 	private int checkDelay=5*20;
 	private int checkInterval=10*20;
 	
+	public Configuration config;
+	
 	public void onEnable(){
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvent(Event.Type.PLAYER_JOIN , playerListener, Event.Priority.Monitor , this);
@@ -74,7 +76,8 @@ public class timerank extends JavaPlugin
 		new File(mainDirectory).mkdir();
 		new File(mainDirectory+File.separator+"data").mkdir();		
 		//loadPlaytime();
-				
+		config = getConfiguration();
+		
 		loadConfig();		
 		//setupPermissions();
 		
@@ -90,7 +93,7 @@ public class timerank extends JavaPlugin
 		
 		RentedAbilities = new LinkedList<PurchasedAbility>();
 		loadRent();
-		log.info("[Time Rank] Version " + this.getDescription().getVersion() + "Enabled.");
+		log.info("[Time Rank] Version " + this.getDescription().getVersion() + " Enabled.");
 	} 
 
 	public void onDisable(){ 				
@@ -107,22 +110,30 @@ public class timerank extends JavaPlugin
 	private void loadConfig()
 	{
 		try
-		{
-			Configuration c = getConfiguration();
-			c.load();
-			debug = c.getBoolean("settings.debug",false);			
-			hideUnavaible = c.getBoolean("settings.hideUnavaible",false);
-			List<String> keys = c.getKeys("ranks");
+		{						
+			config.load();
+			//check for old config.
+			int cv=config.getInt("settings.configVersion", 1);
+			if (cv==1)
+			{
+				log.info("[TimeRank] Old config version " + cv + " detected. Updating to new config format.");				
+				updateConfig();
+				config.load();
+				Ranks.clear();
+			}
+			debug = config.getBoolean("settings.debug",false);			
+			hideUnavaible = config.getBoolean("settings.hideUnavaible",false);
+			List<String> keys = config.getKeys("ranks");
 			DebugPrint("Keys size "+Integer.toString(keys.size()));
-			//load old config
+			//load config
 			for(String key : keys)
 			{		
 				String node="ranks."+key;
-				String sGroup = c.getString(node+".group");
-				String sOldGroup = c.getString(node+".oldgroup","");
-				String sWorld = c.getString(node+".world","*");
-				boolean remove = c.getBoolean(node+".remove", false);
-				int iTime = c.getInt(node+".time",-1);
+				String sGroup = config.getString(node+".group");
+				String sOldGroup = config.getString(node+".oldgroup","");
+				String sWorld = config.getString(node+".world","*");
+				boolean remove = config.getBoolean(node+".remove", false);
+				int iTime = config.getInt(node+".time",-1);
 				long lTime = (long)iTime * 60 * 1000;		
 				GenericGroup group =  new GenericGroup(sWorld,sGroup);;
 				GenericGroup gOldGroup=null;
@@ -131,35 +142,46 @@ public class timerank extends JavaPlugin
 				Rank rank = new Rank(key, group, gOldGroup, remove);
 				rank.name=key;
 				rank.time = lTime;
-				if (c.getString(node+".cost","").equalsIgnoreCase("money"))
+				if (config.getString(node+".buy.cost","").equalsIgnoreCase("money"))
 					rank.cost=0;
 				else
-					rank.cost	= c.getInt(node+".cost", -1);
-				rank.amount		= c.getDouble(node+".amount", 1);
-				rank.minTime		= c.getInt(node+".minTime", -1)*60*1000;				
-				rank.broadcast	= c.getBoolean(node+".broadcast", true);
-				rank.msg		= c.getString(node+".msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");				
+					rank.cost	= config.getInt(node+".buy.cost", -1);
+				if (rank.cost != -1)
+				{
+					rank.amount		= config.getDouble(node+".buy.amount", 1);
+					rank.minTime		= config.getInt(node+".buy.minTime", -1)*60*1000;				
+					rank.broadcast	= config.getBoolean(node+".buy.broadcast", true);
+					rank.msg		= config.getString(node+".buy.msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
+				} else {
+					config.removeProperty(node+".buy.cost");
+					config.removeProperty(node+".buy");
+				}
 				
 				//Rent stuff
-				if (c.getString(node+".rentCost","").equalsIgnoreCase("money"))
+				if (config.getString(node+".rent.cost","").equalsIgnoreCase("money"))
 					rank.rentCost=0;
 				else
-					rank.rentCost	= c.getInt(node+".rentCost", -1);
-				rank.rentMinTime	= c.getInt(node+".rentMinTime", -1)*60*1000;
-				rank.rentAmount		= c.getDouble(node+".rentAmount", 1);
-				rank.rentBroadcast	= c.getBoolean(node+".rentBroadcast", true);
-				rank.rentGainedMsg	= c.getString(node+".rentGainedMsg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
-				rank.rentLostMsg	= c.getString(node+".rentLostMsg", "&B<player.name> &Ehas been demoted from &B<rank.group> &Eto &B<rank.oldgroup>.");
-				
-				iTime = c.getInt(node+".rentTime",-1);
-				lTime = (long)iTime * 60 * 1000;	
-				rank.rentTime		= lTime;
+					rank.rentCost	= config.getInt(node+".rent.cost", -1);
+				if (rank.rentCost != -1)
+				{
+					rank.rentMinTime	= config.getInt(node+".rent.minTime", -1)*60*1000;
+					rank.rentAmount		= config.getDouble(node+".rent.amount", 1);
+					rank.rentBroadcast	= config.getBoolean(node+".rent.broadcast", true);
+					rank.rentGainedMsg	= config.getString(node+".rent.gainedMsg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
+					rank.rentLostMsg	= config.getString(node+".rent.lostMsg", "&B<player.name> &Ehas been demoted from &B<rank.group> &Eto &B<rank.oldgroup>.");
 					
-				rank.desc			= c.getString(node+".description", "");
+					iTime = config.getInt(node+".rent.time",-1);
+					lTime = (long)iTime * 60 * 1000;	
+					rank.rentTime		= lTime;
+				} else {
+					config.removeProperty(node+".rent.cost");
+					config.removeProperty(node+".rent");
+				}
+										
+				rank.desc			= config.getString(node+".description", "");
 				Ranks.put(rank, lTime);	
 				DebugPrint("Loaded " + rank.name + " with group " + rank.GetGroup().getName() + " in world " + rank.GetGroup().getWorld());
-			}
-			saveconfig();
+			}						
 			
 		}catch(Exception e){
 			ThrowSimpleError(e);
@@ -168,36 +190,127 @@ public class timerank extends JavaPlugin
 		
 	}
 		
-	private void saveconfig()
+	private void updateConfig()
 	{
-		Configuration c = getConfiguration();		
-		
-		c.setProperty("settings.debug", debug);
-		c.setProperty("settings.hideUnavaible", hideUnavaible);		
+		config.load();
+		debug = config.getBoolean("settings.debug",false);				
+		hideUnavaible = config.getBoolean("settings.hideUnavaible",false);
+		List<String> keys = config.getKeys("ranks");
+		DebugPrint("Keys size "+Integer.toString(keys.size()));
+		//load old config
+		for(String key : keys)
+		{		
+			String node="ranks."+key;
+			String sGroup = config.getString(node+".group");
+			String sOldGroup = config.getString(node+".oldgroup","");
+			String sWorld = config.getString(node+".world","*");
+			boolean remove = config.getBoolean(node+".remove", false);
+			int iTime = config.getInt(node+".time",-1);
+			long lTime = (long)iTime * 60 * 1000;		
+			GenericGroup group =  new GenericGroup(sWorld,sGroup);;
+			GenericGroup gOldGroup=null;
+			if (sOldGroup != "")
+				gOldGroup =  new GenericGroup(sWorld,sOldGroup);		
+			Rank rank = new Rank(key, group, gOldGroup, remove);
+			rank.name=key;
+			rank.time = lTime;
+			if (config.getString(node+".cost","").equalsIgnoreCase("money"))
+				rank.cost=0;
+			else
+				rank.cost	= config.getInt(node+".cost", -1);
+			if (rank.cost != -1)
+			{
+				rank.amount		= config.getDouble(node+".amount", 1);
+				rank.minTime		= config.getInt(node+".minTime", -1)*60*1000;				
+				rank.broadcast	= config.getBoolean(node+".broadcast", true);
+				rank.msg		= config.getString(node+".msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");				
+			} else {
+				config.removeProperty(node+".cost");
+			}
+			//Rent stuff
+			if (config.getString(node+".rentCost","").equalsIgnoreCase("money"))
+				rank.rentCost=0;
+			else
+				rank.rentCost	= config.getInt(node+".rentCost", -1);
+			if (rank.rentCost != -1)
+			{
+				rank.rentMinTime	= config.getInt(node+".rentMinTime", -1)*60*1000;
+				rank.rentAmount		= config.getDouble(node+".rentAmount", 1);
+				rank.rentBroadcast	= config.getBoolean(node+".rentBroadcast", true);
+				rank.rentGainedMsg	= config.getString(node+".rentGainedMsg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
+				rank.rentLostMsg	= config.getString(node+".rentLostMsg", "&B<player.name> &Ehas been demoted from &B<rank.group> &Eto &B<rank.oldgroup>.");
+			}
+			else
+			{
+				config.removeProperty(node+".rentCost");
+			}
+					
+			
+			iTime = config.getInt(node+".rentTime",-1);
+			lTime = (long)iTime * 60 * 1000;	
+			rank.rentTime		= lTime;
+				
+			rank.desc			= config.getString(node+".description", "");
+			Ranks.put(rank, lTime);	
+			DebugPrint("Loaded " + rank.name + " with group " + rank.GetGroup().getName() + " in world " + rank.GetGroup().getWorld());
+			
+			//Remove old nods
+			for(String remNode : config.getKeys(node))
+			{//loop though all the nodes.
+				DebugPrint("Removing old node: "+node+"."+remNode);
+				config.removeProperty(node+"."+remNode);
+			}
+		}
+		saveConfig();
+	}
+	
+	private void saveConfig()
+	{
+		config.setProperty("settings.debug", debug);
+		config.setProperty("settings.hideUnavaible", hideUnavaible);		
+		config.setProperty("settings.configVersion", 2);
 		
 		for(Rank rank : Ranks.keySet())
 		{
-			String node="ranks."+rank.name;
-			c.setProperty(node+".group", rank.GetGroup().getName());
-			c.setProperty(node+".world", rank.GetGroup().getWorld());
+			String node="ranks."+rank.name;			
 			
-			c.setProperty(node+".time", rank.time/60/1000);
-			c.setProperty(node+".cost", rank.cost);
-			c.setProperty(node+".amount", rank.amount);
-			c.setProperty(node+".minTime", rank.minTime/60/1000);
-			c.setProperty(node+".broadcast", rank.broadcast);
-			c.setProperty(node+".msg", rank.msg);
+			config.setProperty(node+".group", rank.GetGroup().getName());
+			config.setProperty(node+".world", rank.GetGroup().getWorld());
+			config.setProperty(node+".oldgroup", rank.GetOldGroup().getName());
 			
-			c.setProperty(node+".rentCost", rank.rentCost);
-			c.setProperty(node+".rentMinTime", rank.rentMinTime/60/1000);
-			c.setProperty(node+".rentAmount", rank.rentAmount);
-			c.setProperty(node+".rentBroadcast", rank.rentBroadcast);
-			c.setProperty(node+".rentGainedMessage", rank.rentGainedMsg);
-			c.setProperty(node+".rentLostMessage", rank.rentLostMsg);
-			c.setProperty(node+".rentTime", rank.rentTime/60/1000);
+			config.setProperty(node+".time", rank.time/60/1000);
+			if (rank.cost > -1)
+			{
+				if (rank.cost>0)
+					config.setProperty(node+".buy.cost", rank.cost);
+				else if (rank.cost==0)
+					config.setProperty(node+".buy.cost", "Money");					
+				
+				config.setProperty(node+".buy.amount", rank.amount);
+				if (rank.minTime>0) config.setProperty(node+".buy.minTime", rank.minTime/60/1000);
+				config.setProperty(node+".buy.broadcast", rank.broadcast);
+				config.setProperty(node+".buy.msg", rank.msg);
+			}
 			
-			c.setProperty(node+".description", rank.desc);
+			if (rank.rentCost > -1)
+			{
+				DebugPrint("rentCost is "+rank.rentCost+" for "+rank.name);
+				if (rank.rentCost>0)
+					config.setProperty(node+".rent.cost", rank.rentCost);
+				else if (rank.rentCost==0)
+					config.setProperty(node+".rent.cost", "Money");
+				if (rank.rentMinTime>0) config.setProperty(node+".rent.minTime", rank.rentMinTime/60/1000);
+				config.setProperty(node+".rent.amount", rank.rentAmount);
+				config.setProperty(node+".rent.broadcast", rank.rentBroadcast);
+				config.setProperty(node+".rent.gainedMessage", rank.rentGainedMsg);
+				config.setProperty(node+".rent.lostMessage", rank.rentLostMsg);
+				config.setProperty(node+".rent.time", rank.rentTime/60/1000);
+			}
+			
+			config.setProperty(node+".description", rank.desc);
+			
 		}
+		config.save();
 	}
 	public void setupPermissions() {
 		 Plugin permissionsPlugin = this.getServer().getPluginManager().getPlugin("Permissions");
@@ -454,6 +567,11 @@ public class timerank extends JavaPlugin
 				}
 				else if (args[0].equalsIgnoreCase("group"))
 				{
+					if (args.length < 2)
+					{
+						sender.sendMessage("§CUseage: /timerank group <name>");
+						return true;
+					}
 					sender.sendMessage("§B-----------Advanced Rank List-----------");
 					for(Rank r : Ranks.keySet())
 					{				
@@ -474,6 +592,24 @@ public class timerank extends JavaPlugin
 						sender.sendMessage("§B-----------------------------------------");
 						return true;
 					}
+				}
+				else if (args[0].equalsIgnoreCase("set"))
+				{
+					if (args.length < 3)
+					{
+						sender.sendMessage("§CUseage: /timerank set <setting> <value>");
+						return true;
+					}
+					if (args[1].equalsIgnoreCase("debug"))
+					{
+						if (args[2].equalsIgnoreCase("true"))						
+							debug=true;							
+						else						
+							debug=false;
+						sender.sendMessage("§AConfig file updated.");
+						saveConfig();
+					}
+					return true;
 				}
 				else if (args[0].equalsIgnoreCase("test"))
 				{
@@ -536,8 +672,8 @@ public class timerank extends JavaPlugin
 	public void saveRent()
 	{
 		try {			
-			
-			ObjectOutputStream obj = new ObjectOutputStream(new FileOutputStream("rent.data"));
+			File path = new File(mainDirectory+File.separator+"data"+File.separator+"rent.data");
+			ObjectOutputStream obj = new ObjectOutputStream(new FileOutputStream(path.getPath()));
 			obj.writeObject(RentedAbilities);
 			obj.close();
 		} catch (FileNotFoundException e) {

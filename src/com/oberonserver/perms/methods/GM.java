@@ -45,7 +45,7 @@ public class GM implements PermMethod {
 		}
 		plugin.DebugPrint("Promoting " + u.getName() + " from " + u.getGroupName());
 		u.setGroup(newGroup);
-		plugin.DebugPrint( u.getName() + " is now in " + u.getGroupName());
+		plugin.DebugPrint( u.getName() + " is now in " + u.getGroupName());		
 	}
 	public void RemoveGroup(String world, String name, String parentWorld, String parentName)
 	{
