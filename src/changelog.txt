@@ -7,7 +7,8 @@ Version 0.0.9
 	Fixed bug when loading play times and it coming back null.
 	Added message to reload command to let you know it worked.
 	Added better error messages, trapped a few more errors.
-	Preserved ordering for rank list so that /listranks is printed in a logical order. 
+	Preserved ordering for rank list so that /listranks is printed in a logical order.
+	Fixed but where rented abilities would not turn off if the server was rebooted. 
 	
 Version 0.0.8
 	Fixed reload option to reload config instead of needing a reboot.

@@ -2,7 +2,9 @@ package com.oberonserver.timerank;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
@@ -87,6 +89,7 @@ public class timerank extends JavaPlugin
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, checker, checkDelay, checkInterval);
 		
 		RentedAbilities = new LinkedList<PurchasedAbility>();
+		loadRent();
 		log.info("[Time Rank] Version " + this.getDescription().getVersion() + "Enabled.");
 	} 
 
@@ -98,6 +101,7 @@ public class timerank extends JavaPlugin
 		PlayTime.clear();
 		getServer().getScheduler().cancelTasks(this);
 		log.info("[Time Rank] Disabled.");
+		saveRent();
 	}
 	
 	private void loadConfig()
@@ -110,6 +114,7 @@ public class timerank extends JavaPlugin
 			hideUnavaible = c.getBoolean("settings.hideUnavaible",false);
 			List<String> keys = c.getKeys("ranks");
 			DebugPrint("Keys size "+Integer.toString(keys.size()));
+			//load old config
 			for(String key : keys)
 			{		
 				String node="ranks."+key;
@@ -131,7 +136,7 @@ public class timerank extends JavaPlugin
 				else
 					rank.cost	= c.getInt(node+".cost", -1);
 				rank.amount		= c.getDouble(node+".amount", 1);
-				rank.minTime		= c.getInt(node+".minTime", -1);				
+				rank.minTime		= c.getInt(node+".minTime", -1)*60*1000;				
 				rank.broadcast	= c.getBoolean(node+".broadcast", true);
 				rank.msg		= c.getString(node+".msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");				
 				
@@ -140,7 +145,7 @@ public class timerank extends JavaPlugin
 					rank.rentCost=0;
 				else
 					rank.rentCost	= c.getInt(node+".rentCost", -1);
-				rank.rentMinTime	= c.getInt(node+".rentMinTime", -1);
+				rank.rentMinTime	= c.getInt(node+".rentMinTime", -1)*60*1000;
 				rank.rentAmount		= c.getDouble(node+".rentAmount", 1);
 				rank.rentBroadcast	= c.getBoolean(node+".rentBroadcast", true);
 				rank.rentGainedMsg	= c.getString(node+".rentGainedMsg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
@@ -150,9 +155,11 @@ public class timerank extends JavaPlugin
 				lTime = (long)iTime * 60 * 1000;	
 				rank.rentTime		= lTime;
 					
+				rank.desc			= c.getString(node+".description", "");
 				Ranks.put(rank, lTime);	
 				DebugPrint("Loaded " + rank.name + " with group " + rank.GetGroup().getName() + " in world " + rank.GetGroup().getWorld());
 			}
+			saveconfig();
 			
 		}catch(Exception e){
 			ThrowSimpleError(e);
@@ -161,6 +168,37 @@ public class timerank extends JavaPlugin
 		
 	}
 		
+	private void saveconfig()
+	{
+		Configuration c = getConfiguration();		
+		
+		c.setProperty("settings.debug", debug);
+		c.setProperty("settings.hideUnavaible", hideUnavaible);		
+		
+		for(Rank rank : Ranks.keySet())
+		{
+			String node="ranks."+rank.name;
+			c.setProperty(node+".group", rank.GetGroup().getName());
+			c.setProperty(node+".world", rank.GetGroup().getWorld());
+			
+			c.setProperty(node+".time", rank.time/60/1000);
+			c.setProperty(node+".cost", rank.cost);
+			c.setProperty(node+".amount", rank.amount);
+			c.setProperty(node+".minTime", rank.minTime/60/1000);
+			c.setProperty(node+".broadcast", rank.broadcast);
+			c.setProperty(node+".msg", rank.msg);
+			
+			c.setProperty(node+".rentCost", rank.rentCost);
+			c.setProperty(node+".rentMinTime", rank.rentMinTime/60/1000);
+			c.setProperty(node+".rentAmount", rank.rentAmount);
+			c.setProperty(node+".rentBroadcast", rank.rentBroadcast);
+			c.setProperty(node+".rentGainedMessage", rank.rentGainedMsg);
+			c.setProperty(node+".rentLostMessage", rank.rentLostMsg);
+			c.setProperty(node+".rentTime", rank.rentTime/60/1000);
+			
+			c.setProperty(node+".description", rank.desc);
+		}
+	}
 	public void setupPermissions() {
 		 Plugin permissionsPlugin = this.getServer().getPluginManager().getPlugin("Permissions");
 
@@ -177,7 +215,7 @@ public class timerank extends JavaPlugin
 			            }catch(Exception e){
 			            	PluginManager pm = this.getServer().getPluginManager();
 			            				            	
-			            	Map<String,String>ErrorInfo = new HashMap<String,String>();
+			            	Map<String,String>ErrorInfo = new LinkedHashMap<String,String>();
 			            	ErrorInfo.put("Error message:", "Set to use Permissions 3.x but something went wrong.");
 			            	ErrorInfo.put("Depend", pm.getPlugin("Permissions").getDescription().getDepend().toString());
 			            	ErrorInfo.put("Permissions version", pm.getPlugin("Permissions").getDescription().getVersion().toString());
@@ -353,6 +391,8 @@ public class timerank extends JavaPlugin
 					if (r.GetOldGroup() != null)
 						msg+="§BRequires group: §A" +  r.GetOldGroup().getName()+ " ";
 					sender.sendMessage(msg);				
+					if (r.desc != "")
+						sender.sendMessage("§BDescription: §A"+r.desc);
 				}
 				sender.sendMessage("§B-----------------------------------------");
 				return true;
@@ -460,7 +500,7 @@ public class timerank extends JavaPlugin
 			}
 		}catch(Exception e)
 		{
-			Map<String,String>ErrorInfo = new HashMap<String,String>();
+			Map<String,String>ErrorInfo = new LinkedHashMap<String,String>();
 			//CommandSender sender, Command cmd, String commandLabel, String[] args
 			ErrorInfo.put("Msg", "Error running command.");
 			ErrorInfo.put("CMD", cmd.toString());
@@ -493,13 +533,45 @@ public class timerank extends JavaPlugin
 		return login + total;
 	}	
 	
-
+	public void saveRent()
+	{
+		try {			
+			
+			ObjectOutputStream obj = new ObjectOutputStream(new FileOutputStream("rent.data"));
+			obj.writeObject(RentedAbilities);
+			obj.close();
+		} catch (FileNotFoundException e) {
+			ThrowSimpleError(e);
+		} catch (IOException e) {
+			ThrowSimpleError(e);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void loadRent()
+	{ 		
+		File path = new File(mainDirectory+File.separator+"data"+File.separator+"rent.data");
+	    if (path.exists())
+	    {
+			try {
+				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
+				RentedAbilities = (List<PurchasedAbility>)obj.readObject();			
+			} catch (FileNotFoundException e) {
+				ThrowSimpleError(e);
+			} catch (IOException e) {
+				ThrowSimpleError(e);
+			} catch (ClassNotFoundException e) {
+				ThrowSimpleError(e);
+			}
+	    }
+	}
+	
 	public void savePlaytime()
 	{
 		for(String p : PlayTime.keySet())
 		{					
 			savePlaytime(p);
-		}
+		}		
 	}
 	
 	public void savePlaytime(Player p)
@@ -565,9 +637,17 @@ public class timerank extends JavaPlugin
 		}
 	}
 	
+	public void ThrowSimpleError(Exception e,String msg)
+	{
+		Map<String, String>ErrorInfo= new LinkedHashMap<String,String>();
+		ErrorInfo.put("Msg", msg);
+		ErrorInfo.put("Trace", StracktraceToString(e));		
+		ErrorLog(ErrorInfo);
+	}
+	
 	public void ThrowSimpleError(Exception e)
 	{
-		Map<String, String>ErrorInfo= new HashMap<String,String>();
+		Map<String, String>ErrorInfo = new LinkedHashMap<String,String>();
 		ErrorInfo.put("Trace", StracktraceToString(e));
 		ErrorLog(ErrorInfo);
 	}
@@ -903,7 +983,7 @@ public class timerank extends JavaPlugin
 
 	public void update(int interval) {
 		CheckRanks(getServer().getOnlinePlayers());
-		CheckRented(interval);
+		CheckRented(interval);		
 		//savePlaytime();		
 	}
 	

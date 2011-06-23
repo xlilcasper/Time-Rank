@@ -3,6 +3,7 @@ package com.oberonserver.timerank;
 public class Rank {
 	private GenericGroup group;
 	private GenericGroup oldgroup;
+	public String desc;
 	public long time=-1;
 	public int cost=-1;	
 	public long minTime=-1;

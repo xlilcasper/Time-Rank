@@ -13,5 +13,6 @@ public class TimeRankWorldListener extends WorldListener {
     @Override
     public void onWorldSave(WorldSaveEvent event) {
     	plugin.savePlaytime();
+    	plugin.saveRent();
     }
 }
