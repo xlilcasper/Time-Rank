@@ -7,8 +7,8 @@
 	<classpathentry kind="lib" path="lib/Essentials.jar"/>
 	<classpathentry kind="lib" path="lib/iCo4.jar"/>
 	<classpathentry kind="lib" path="lib/iCo5.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Casper/workspace/TimeRank/lib/Permissions3.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Casper/workspace/TimeRank/lib/EssentialsGroupBridge.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Casper/workspace/TimeRank/lib/EssentialsGroupManager.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Casper/git/Time-Rank/lib/Permissions3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Casper/git/Time-Rank/lib/EssentialsGroupBridge.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Casper/git/Time-Rank/lib/EssentialsGroupManager.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
