@@ -1215,6 +1215,7 @@ public class timerank extends JavaPlugin
 		}
 		return replace;
 	}
+	
 	@SuppressWarnings("unused")
 	private Map<String,String>ProcessMsgVars(GenericGroup g)
 	{
