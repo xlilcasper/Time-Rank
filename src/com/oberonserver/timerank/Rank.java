@@ -8,19 +8,19 @@ public class Rank {
 	public int cost=-1;	
 	public long minTime=-1;
 	public double amount=1;
-	public boolean remove;
-	public String name;	
-	public String msg;
-	public boolean broadcast;
+	public boolean remove=false;
+	public String name="";	
+	public String msg="";
+	public boolean broadcast=false;
 	
 	public int rentCost=-1;
 	public double rentAmount=-1;
 	public long rentTime=-1;
 	public long rentMinTime=-1;
 	public boolean rentReturn=true;
-	public String rentLostMsg;
-	public String rentGainedMsg;
-	public boolean rentBroadcast;
+	public String rentLostMsg="";
+	public String rentGainedMsg="";
+	public boolean rentBroadcast=false;
 	
 	public Rank(String sName, String sWorld, String sGroup,  String sOldGroup, boolean bRemove)
 	{

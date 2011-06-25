@@ -1242,7 +1242,11 @@ public class timerank extends JavaPlugin
 				DebugPrint("Can not get property " + f.getName());
 			} catch (IllegalAccessException e) {
 				DebugPrint("Can not get property " + f.getName());
-			}			
+			} catch (Exception e)
+			{
+				ThrowSimpleError(e);
+			}
+			
 		}
 		
 		return replace;
