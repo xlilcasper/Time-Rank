@@ -1202,7 +1202,7 @@ public class timerank extends JavaPlugin
 					replace.putAll(ProcessMsgVars(p));
 					replace.putAll(ProcessMsgVars(r));
 					String msg = ProcessMsg(r.msg, replace);
-					if (r.rentBroadcast)				
+					if (r.broadcast)				
 						getServer().broadcastMessage(msg);
 					else
 						p.sendMessage(msg);
@@ -1267,16 +1267,15 @@ public class timerank extends JavaPlugin
 			if (time >= ab.time && ab.time>=0)
 			{//Time looks good, lets try to promote.
 				DebugPrint("CheckAbilities: " + p.getName() + " time is great enough. Trying to promote to " + ab.name);
-				int doPromote =AddPlayerNode(p,ab);
-				switch(doPromote)
+				switch(AddPlayerNode(p,ab))
 				{
 				case 0:
-					DebugPrint("CheckAbilities: " + p.getName() + " is now in " + ab.name);
+					DebugPrint("CheckAbilities: " + p.getName() + " is now has " + ab.name);
 					Map<String, String> replace = new HashMap<String, String>();				
 					replace.putAll(ProcessMsgVars(p));
 					replace.putAll(ProcessMsgVars(ab));
 					String msg = ProcessMsg(ab.msg, replace);
-					if (ab.rentBroadcast)				
+					if (ab.broadcast)				
 						getServer().broadcastMessage(msg);
 					else
 						p.sendMessage(msg);
