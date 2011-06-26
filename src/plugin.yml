@@ -8,15 +8,21 @@ commands:
     listranks:
         description: List ranks and there requirements
         usage: /listranks <filter>
-    listabs:
-        description: List ranks and there requirements
-        usage: /listabs <filter>
     buyrank:
         description: Buy a listed rank
         usage: /buyrank <rank>
     rentrank:
         description: Rents a listed rank
         usage: /rentrank <rank>
+    listabs:
+        description: List ranks and there requirements
+        usage: /listabs <filter>
+    buyab:
+        description: Buy a listed ability
+        usage: /buyab <ability>
+    rentab:
+        description: Rents a listed ability
+        usage: /rentab <ability>
     checkranks:
         description: Check ranks and promote if needed
         usage: /checkranks

@@ -608,6 +608,40 @@ public class timerank extends JavaPlugin
 				sender.sendMessage("§B-----------------------------------------");
 				return true;
 			}
+			else if (cmd.getName().equalsIgnoreCase("buyab"))
+			{
+				//Make sure a player is running the command.
+				if(!(sender instanceof Player))
+				{
+					log.info("This command must be run in game.");
+					return false;
+				}
+
+				if (args.length < 1)
+					return false;			
+				//Buy the ability
+				String abilityname = args[0];
+				DebugPrint(player.getName() + " is trying to buy "+abilityname);
+				BuyAbility(player,abilityname);
+				return true;
+			}
+			else if (cmd.getName().equalsIgnoreCase("rentab"))
+			{
+				//Make sure it is a player
+				if(!(sender instanceof Player))
+				{
+					log.info("This command must be run in game.");
+					return false;
+				}
+
+				if (args.length < 1)
+					return false;	
+				//Rent out the ability
+				String abilityname = args[0];
+				DebugPrint(player.getName() + " is trying to rent "+abilityname);
+				RentAbility(player,abilityname);
+				return true;
+			}
 			else if (cmd.getName().equalsIgnoreCase("listabs"))
 			{
 				//Set up the filter and page info
