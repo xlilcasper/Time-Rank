@@ -1,8 +1,6 @@
-To Do
-	Add ability to buy permission node instead of full group.
-	
 Version 0.1.0
 	Fixed null pointer error when rent was present but empty.
+	Added ability to earn/buy/rent abilities and permission nodes.
 
 Version 0.0.9
 	Fixed bug when loading play times and it coming back null.

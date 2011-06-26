@@ -114,10 +114,11 @@ public class timerank extends JavaPlugin
 		saveRent();
 		permissionHandler=null;
 		Ranks.clear();
+		Abilities.clear();
 		StartTime.clear();
 		PlayTime.clear();
 		RentedAbilities.clear();
-
+		RentedRanks.clear();
 		//stop our scheduled rank checker
 		getServer().getScheduler().cancelTasks(this);
 		log.info("[Time Rank] Disabled.");		
@@ -875,9 +876,20 @@ public class timerank extends JavaPlugin
 	}	
 
 	public void saveRent()
-	{//Save our rented abilites to disk so we can load them later.
+	{//Save our rented ranks and abilities to disk so we can load them later.
 		try {			
 			File path = new File(mainDirectory+File.separator+"data"+File.separator+"rent.data");
+			ObjectOutputStream obj = new ObjectOutputStream(new FileOutputStream(path.getPath()));
+			obj.writeObject(RentedRanks);
+			obj.close();
+		} catch (FileNotFoundException e) {
+			ThrowSimpleError(e);
+		} catch (IOException e) {
+			ThrowSimpleError(e);
+		}
+		
+		try {			
+			File path = new File(mainDirectory+File.separator+"data"+File.separator+"rentability.data");
 			ObjectOutputStream obj = new ObjectOutputStream(new FileOutputStream(path.getPath()));
 			obj.writeObject(RentedAbilities);
 			obj.close();
@@ -897,6 +909,21 @@ public class timerank extends JavaPlugin
 			try {
 				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
 				RentedRanks = (List<PurchasedRank>)obj.readObject();			
+			} catch (FileNotFoundException e) {
+				ThrowSimpleError(e);
+			} catch (IOException e) {
+				ThrowSimpleError(e);
+			} catch (ClassNotFoundException e) {
+				ThrowSimpleError(e);
+			}
+		}
+		
+		path = new File(mainDirectory+File.separator+"data"+File.separator+"rentability.data");
+		if (path.exists())
+		{
+			try {
+				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
+				RentedAbilities = (List<PurchasedAbility>)obj.readObject();			
 			} catch (FileNotFoundException e) {
 				ThrowSimpleError(e);
 			} catch (IOException e) {
