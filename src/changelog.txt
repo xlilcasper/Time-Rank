@@ -1,10 +1,12 @@
 To Do
-	Add in description field
 	Add ability to buy permission node instead of full group.
 	
+Version 0.1.0
+	Fixed null pointer error when rent was present but empty.
 
 Version 0.0.9
 	Fixed bug when loading play times and it coming back null.
+	Added in description field.
 	Added message to reload command to let you know it worked.
 	Added better error messages, trapped a few more errors.
 	Preserved ordering for rank list so that /listranks is printed in a logical order.

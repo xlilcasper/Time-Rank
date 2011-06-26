@@ -1,6 +1,6 @@
 name: TimeRank
 main: com.oberonserver.timerank.timerank
-version: 0.0.9
+version: 0.1.0
 commands:
     playtime:
         description: Displays current play time of a player.
