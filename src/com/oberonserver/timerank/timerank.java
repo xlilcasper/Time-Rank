@@ -1100,6 +1100,91 @@ public class timerank extends JavaPlugin
 		}
 	}
 
+	public void BuyAbility(Player player, String abilityname)
+	{	//Given a player and a rank. Try to have that player buy that rank.	
+		DebugPrint("Looking for " + abilityname);
+		for(Ability ab : Abilities.keySet())
+		{
+			DebugPrint("Checking "+abilityname + "=" + ab.name);
+			if (ab.name.equalsIgnoreCase(abilityname))
+			{//found the ability we are looking for. See if it is for sale		
+				DebugPrint(abilityname + " found. Checking cost: " +ab.cost);
+				//Check if we have passed the minimum time				
+				if (ab.cost>=0 && ab.minTime < GetPlaytime(player.getName()))
+				{
+					if (ab.cost==0)
+					{//use money
+						DebugPrint(abilityname + " Using money for cost");
+						if (Method.getAccount(player.getName()).hasEnough(ab.amount))
+						{
+							DebugPrint("You have the required money");															
+							switch(AddPlayerNode(player,ab))
+							{
+							case 0://Everything went fine
+								Method.getAccount(player.getName()).subtract(ab.amount); //Consume money.
+								Map<String, String> replace = new HashMap<String, String>();				
+								replace.putAll(ProcessMsgVars(player));
+								replace.putAll(ProcessMsgVars(ab));
+								String msg = ProcessMsg(ab.msg, replace);
+								if (ab.broadcast)				
+									getServer().broadcastMessage(msg);
+								else
+									player.sendMessage(msg);
+								break;
+							case 1://Don't have the permissions
+								player.sendMessage("You don't have the permissions to buy " + ab.name);
+								break;
+							case 2:
+								player.sendMessage("You are already all the permissions " + ab.name + " grants.");
+								break;		
+							}//end switch
+						}
+						else
+						{
+							player.sendMessage("You don't have enough items. You need at least " + Method.format(ab.amount));
+						}
+					}
+
+					else
+					{//use block id				
+						DebugPrint(abilityname + " Using block "+ ab.cost +" for cost");
+						ItemStack item = new ItemStack(ab.cost, (int) ab.amount);	
+						//right now the player must have exactly that item.
+						//Example: a stack of 5 gold bars instead of a stack of 10 gold bars.
+						if (CheckItems(player,item))
+						{
+							DebugPrint("You have the required items");															
+							switch(AddPlayerNode(player,ab))
+							{
+							case 0://Everything went fine	
+								ConsumeItems(player,item);
+								Map<String, String> replace = new HashMap<String, String>();				
+								replace.putAll(ProcessMsgVars(player));
+								replace.putAll(ProcessMsgVars(ab));
+								String msg = ProcessMsg(ab.msg, replace);
+								if (ab.broadcast)				
+									getServer().broadcastMessage(msg);
+								else
+									player.sendMessage(msg);
+								break;
+							case 1://Don't have the permissions
+								player.sendMessage("You don't have the permissions to buy " + ab.name);
+								break;
+							case 2:
+								player.sendMessage("You are already all the permissions " + ab.name + " grants.");
+								break;	
+							}//end switch
+						}//end player has items check
+						else
+						{							
+							player.sendMessage("You don't have enough items. You need at least " + ab.amount + " of " + Material.getMaterial(ab.cost));
+						}
+					}//end check to see if we are using money/block
+				}
+			}//end check to see if we can buy this
+		}//end check of rank name
+	}
+	
 	public int PromotePlayer(Player p, Rank r)
 	{
 		//Entry entry = perms.getHandler().getUserObject(p.getWorld().getName(), p.getName());
@@ -1290,8 +1375,7 @@ public class timerank extends JavaPlugin
 			}
 		}		
 		return false;
-	}	
-	
+	}		
 	
 	public void update(int interval) {
 		CheckRanks(getServer().getOnlinePlayers());
