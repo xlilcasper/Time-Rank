@@ -8,6 +8,9 @@ commands:
     listranks:
         description: List ranks and there requirements
         usage: /listranks <filter>
+    listabs:
+        description: List ranks and there requirements
+        usage: /listabs <filter>
     buyrank:
         description: Buy a listed rank
         usage: /buyrank <rank>

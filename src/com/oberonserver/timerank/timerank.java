@@ -51,7 +51,8 @@ public class timerank extends JavaPlugin
 	private final TimeRankServerListener serverListener = new TimeRankServerListener(this);	
 	public Map<String, Long> StartTime = new HashMap<String, Long>();
 	public Map<String, Long> PlayTime = new HashMap<String, Long>();
-	public List<PurchasedRank> RentedAbilities;
+	public List<PurchasedAbility> RentedAbilities;
+	public List<PurchasedRank> RentedRanks;
 	public Map<Rank, Long> Ranks = new LinkedHashMap<Rank, Long>();	
 	public Map<Ability, Long> Abilities = new LinkedHashMap<Ability,Long>();
 	public Method Method = null;
@@ -99,7 +100,8 @@ public class timerank extends JavaPlugin
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, checker, checkDelay, checkInterval);
 
 		//Load what abilites were rented last time we were closed
-		RentedAbilities = new LinkedList<PurchasedRank>();
+		RentedAbilities = new LinkedList<PurchasedAbility>();
+		RentedRanks = new LinkedList<PurchasedRank>();
 		loadRent();
 
 		//All went well.
@@ -606,6 +608,80 @@ public class timerank extends JavaPlugin
 				sender.sendMessage("伯-----------------------------------------");
 				return true;
 			}
+			else if (cmd.getName().equalsIgnoreCase("listabs"))
+			{
+				//Set up the filter and page info
+				String sCmd ="";
+				int iPage=-1;
+				if (args.length > 0)
+					if (!isParsableToInt(args[0]))					
+						sCmd = args[0];
+					else
+						iPage = Integer.parseInt(args[0]);
+				if ((args.length > 1) && (isParsableToInt(args[1])))
+					iPage = Integer.parseInt(args[1]);
+				//iPage -= 1;
+				int perPage = 5;
+				int curItem = -1;
+				int startItem = ((iPage-1) * perPage);			
+
+				sender.sendMessage("伯---------------Abilities List---------------");
+				for(Ability ab : Abilities.keySet())
+				{		
+
+					//check to see if we hide groups we can't get.
+					if ( hideUnavaible )
+						if (!perms.HasPermission(player, ab.permission, player.getWorld().getName()))
+						{
+							DebugPrint("Hidding " + ab.name + " from " + player.getName());
+							continue;
+						}
+
+					//Check filters
+					if (sCmd.equalsIgnoreCase("time"))
+						if (ab.time<=0)
+							continue;
+
+					if (sCmd.equalsIgnoreCase("buy"))
+						if (ab.cost<0)
+							continue;
+
+					if (sCmd.equalsIgnoreCase("rent"))
+						if (ab.rentCost<0)
+							continue;
+					//We are showing this one, so update page info
+					curItem +=1;
+					if (iPage >= 0)
+					{
+						if (curItem <= startItem)
+							continue;
+						if (curItem > iPage * perPage)
+							continue;
+					}
+
+
+					//Build the rank info string and display it
+					String msg="你"+ab.name + " - ";
+
+					if (ab.time>0)
+						msg+="伯Time: 你" + Mills2Time(ab.time) + " ";
+					if (ab.cost>0)
+						msg+="伯Buy: 你" +  ab.amount+ " " + Material.getMaterial(ab.cost)+ " ";
+					if (ab.cost==0)
+						msg+="伯Buy: 你" +  Method.format(ab.amount)+ " ";					
+					if (ab.rentCost>0)
+						msg+="伯Rent: 你" +  ab.rentAmount+ " " + Material.getMaterial(ab.rentCost)+ " ";
+					if (ab.rentCost==0)
+						msg+="伯Rent: 你" +  Method.format(ab.rentAmount)+ " ";
+					if (ab.permission != "")
+						msg+="伯Requires perm: 你" +  ab.permission+ " ";
+					sender.sendMessage(msg);				
+					if (ab.desc != "")
+						sender.sendMessage("伯Description: 你"+ab.desc);
+				}
+				sender.sendMessage("伯-----------------------------------------");
+				return true;
+			}
 			else if (cmd.getName().equalsIgnoreCase("timerank"))
 			{
 				//Check for no args. If no args, display basic info
@@ -746,7 +822,6 @@ public class timerank extends JavaPlugin
 		return false;
 	}			
 
-
 	public long GetPlaytime(String player)
 	{//Get the play time of a single player and return it in milliseconds
 		long now = System.currentTimeMillis();
@@ -787,7 +862,7 @@ public class timerank extends JavaPlugin
 		{
 			try {
 				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
-				RentedAbilities = (List<PurchasedRank>)obj.readObject();			
+				RentedRanks = (List<PurchasedRank>)obj.readObject();			
 			} catch (FileNotFoundException e) {
 				ThrowSimpleError(e);
 			} catch (IOException e) {
@@ -1039,7 +1114,7 @@ public class timerank extends JavaPlugin
 							{
 							case 0://Everything went fine
 								Method.getAccount(player.getName()).subtract(r.rentAmount); //Consume money.								
-								RentedAbilities.add(new PurchasedRank(player.getName(), r));
+								RentedRanks.add(new PurchasedRank(player.getName(), r));
 								Map<String, String> replace = new HashMap<String, String>();				
 								replace.putAll(ProcessMsgVars(player));
 								replace.putAll(ProcessMsgVars(r));
@@ -1185,6 +1260,88 @@ public class timerank extends JavaPlugin
 		}//end check of rank name
 	}
 	
+	public void RentAbility(Player player,String abilityname)
+	{//RentedGroups
+		DebugPrint("Looking for " + abilityname);
+		for(Ability ab : Abilities.keySet())
+		{
+			DebugPrint("Checking "+ abilityname + "=" + ab.name);
+			if (ab.name.equalsIgnoreCase(abilityname))
+			{//found the rank we are looking for. See if it is for sale		
+				DebugPrint(abilityname + " found. Checking cost: " +ab.rentCost);
+				if (ab.rentCost>=0)
+				{
+					if (ab.rentCost==0)
+					{//use money
+						DebugPrint(abilityname + " Using money for cost");
+						if (Method.getAccount(player.getName()).hasEnough(ab.rentAmount))
+						{
+							DebugPrint("You have the required items");															
+							switch(AddPlayerNode(player,ab))
+							{
+							case 0://Everything went fine
+								Method.getAccount(player.getName()).subtract(ab.rentAmount); //Consume money.								
+								RentedAbilities.add(new PurchasedAbility(player.getName(), ab));
+								Map<String, String> replace = new HashMap<String, String>();				
+								replace.putAll(ProcessMsgVars(player));
+								replace.putAll(ProcessMsgVars(ab));
+								String msg = ProcessMsg(ab.rentGainedMsg, replace);
+								if (ab.broadcast)				
+									getServer().broadcastMessage(msg);
+								else
+									player.sendMessage(msg);
+								break;
+							case 1://Don't have the permissions
+								player.sendMessage("You don't have the permissions to buy " + ab.name);
+								break;
+							case 2:
+								player.sendMessage("You are already all the permissions " + ab.name + " grants.");
+								break;	
+							}//end switch
+						}
+						else
+						{
+							player.sendMessage("You don't have enough items. You need at least " + Method.format(ab.rentAmount));
+						}
+					}
+					else
+					{//use block id				
+						DebugPrint(abilityname + " Using block "+ ab.rentCost +" for cost");
+						ItemStack item = new ItemStack(ab.rentCost, (int) ab.rentAmount);
+						if (CheckItems(player,item))
+						{
+							DebugPrint("You have the required items");															
+							switch(AddPlayerNode(player,ab))
+							{
+							case 0://Everything went fine
+								ConsumeItems(player,item); //Consume items.
+								Map<String, String> replace = new HashMap<String, String>();				
+								replace.putAll(ProcessMsgVars(player));
+								replace.putAll(ProcessMsgVars(ab));
+								String msg = ProcessMsg(ab.rentGainedMsg, replace);
+								if (ab.broadcast)				
+									getServer().broadcastMessage(msg);
+								else
+									player.sendMessage(msg);
+								break;
+							case 1://Don't have the permissions
+								player.sendMessage("You don't have the permissions to buy " + ab.name);
+								break;
+							case 2:
+								player.sendMessage("You are already all the permissions " + ab.name + " grants.");
+								break;	
+							}//end switch
+						}//end player has items check
+						else
+						{							
+							player.sendMessage("You don't have enough items. You need at least " + ab.rentAmount + " of " + Material.getMaterial(ab.rentCost));
+						}
+					}//end check to see if we are using money
+				}//end check to see if we can buy this
+			}//end check of rank name
+		}
+	}
+	
 	public int PromotePlayer(Player p, Rank r)
 	{
 		//Entry entry = perms.getHandler().getUserObject(p.getWorld().getName(), p.getName());
@@ -1256,6 +1413,18 @@ public class timerank extends JavaPlugin
 			return 2;//already has all the nodes
 	}	
 
+	public void RemovePlayerNode(Player p, Ability ab)
+	{
+		//Entry entry = perms.getHandler().getUserObject(p.getWorld().getName(), p.getName());
+		DebugPrint("RemovePlayerNode: Removing " + ab.name + " from " + p.getName());				
+		
+		for(String node : ab.Nodes)
+		{							
+			perms.RemoveNode(p, node, ab.world);
+			break;				
+		}
+	}	
+	
 	public int CheckRanks(Player[] player)
 	{
 		int promoted=0;
@@ -1306,7 +1475,7 @@ public class timerank extends JavaPlugin
 
 	public void CheckRented(int interval)
 	{		
-		for (Iterator<PurchasedRank> iter = RentedAbilities.iterator() ; iter.hasNext();)
+		for (Iterator<PurchasedRank> iter = RentedRanks.iterator() ; iter.hasNext();)
 		{
 			PurchasedRank pa = iter.next();
 			Player p = getServer().getPlayer(pa.playername);
@@ -1335,6 +1504,38 @@ public class timerank extends JavaPlugin
 				{
 					long left = pa.durationTicks*50; //convert from ticks to milliseconds.					
 					DebugPrint( p.getName() + " still has " + Mills2Time(left) + " in " + pa.rank.GetGroup().getName() );
+				}
+
+			}
+		}
+		
+		for (Iterator<PurchasedAbility> iter = RentedAbilities.iterator() ; iter.hasNext();)
+		{
+			PurchasedAbility pa = iter.next();
+			Player p = getServer().getPlayer(pa.playername);
+			if (p != null && p.isOnline())
+			{//player is online, remove some duration and check if we need to remove or not.
+				DebugPrint("Check to see if " + p.getName() + ":"+ pa.ability.name + "  expired");
+				DebugPrint("Info: Used " + pa.ability.rentTime/1000*20 + "  / " + pa.durationTicks);
+				pa.durationTicks -= interval;
+				if (pa.durationTicks <= 0)
+				{//Rent ran out. Remove ability.
+					DebugPrint("Removing " + pa.ability.name + " from " + p.getName());
+					RemovePlayerNode(p,pa.ability);
+					Map<String, String> replace = new HashMap<String, String>();				
+					replace.putAll(ProcessMsgVars(p));
+					replace.putAll(ProcessMsgVars(pa.ability));
+					String msg = ProcessMsg(pa.ability.rentLostMsg, replace);
+					if (pa.ability.rentBroadcast)				
+						getServer().broadcastMessage(msg);
+					else
+						p.sendMessage(msg);
+					iter.remove();
+				}
+				else
+				{
+					long left = pa.durationTicks*50; //convert from ticks to milliseconds.					
+					DebugPrint( p.getName() + " still has " + Mills2Time(left) + " in " + pa.ability.name );
 				}
 
 			}
