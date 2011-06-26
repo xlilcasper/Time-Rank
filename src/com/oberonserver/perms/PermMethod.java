@@ -10,4 +10,6 @@ public interface PermMethod {
 	public PermissionHandler getHandler();
 	public boolean HasPermission(Player p, String PermissionNode);
 	public boolean inGroup(Player p, String parentWorld, String parentName);
+	public boolean AddNode(Player p, String node, String world);
+	public boolean RemoveNode(Player p, String node, String world);
 }

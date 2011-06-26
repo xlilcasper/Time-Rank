@@ -60,6 +60,20 @@ public class Perm3 implements PermMethod{
 		}
 	}
 	
+	public boolean AddNode(Player p, String node, String World)
+	{
+		getHandler().addUserPermission(World, p.getName(), node);
+		return true;
+		
+	}
+	
+	public boolean RemoveNode(Player p, String node, String World)
+	{
+		getHandler().removeUserPermission(World, p.getName(), node);
+		return true;
+		
+	}
+	
 	public boolean inGroup(Player p, String parentWorld, String parentName)
 	{		
 		return getHandler().inGroup(p.getWorld().getName(), p.getName(),parentWorld, parentName);

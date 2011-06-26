@@ -52,6 +52,32 @@ public class GM implements PermMethod {
 		
 	}
 	
+	public boolean AddNode(Player p, String node, String World)
+	{
+		String name = p.getName();
+		User u;
+		WorldsHolder worldsHolder = gm.getWorldsHolder();				
+		OverloadedWorldHolder dataHolder = null;
+		dataHolder = worldsHolder.getWorldData(World);
+		u=dataHolder.getUser(name);
+		u.addPermission(node);
+		return true;
+		
+	}
+	
+	public boolean RemoveNode(Player p, String node, String World)
+	{
+		String name = p.getName();
+		User u;
+		WorldsHolder worldsHolder = gm.getWorldsHolder();				
+		OverloadedWorldHolder dataHolder = null;
+		dataHolder = worldsHolder.getWorldData(World);
+		u=dataHolder.getUser(name);
+		u.removePermission(node);
+		return true;
+		
+	}
+	
 	@SuppressWarnings("deprecation")
 	public PermissionHandler getHandler()
 	{
