@@ -19,6 +19,9 @@ public class Perm3 implements PermMethod{
 	public boolean HasPermission(Player p, String PermissionNode) {
        	return plugin.permissionHandler.has(p,PermissionNode);       
     }
+	public boolean HasPermission(Player p, String PermissionNode, String world) {
+       	return plugin.permissionHandler.has(world,p.getName(),PermissionNode);
+    }
 	
 	public PermissionHandler getHandler() {
         return plugin.permissionHandler;
