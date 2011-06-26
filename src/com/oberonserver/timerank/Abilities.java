@@ -48,7 +48,7 @@ public class Abilities {
 		boolean worked=true;
 		for(String node : Nodes)
 		{
-			//make sure all of them worked. If one returns fallse, worked will be false
+			//make sure all of them worked. If one returns false, worked will be false
 			if (worked) 
 				worked=perm.RemoveNode(p, node, world);
 			else
