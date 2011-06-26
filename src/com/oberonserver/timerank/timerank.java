@@ -65,7 +65,10 @@ public class timerank extends JavaPlugin
 	public Configuration config;
 	
 	public void onEnable(){
+		//Get the plugin managor
 		PluginManager pm = this.getServer().getPluginManager();
+		
+		//register our events
 		pm.registerEvent(Event.Type.PLAYER_JOIN , playerListener, Event.Priority.Monitor , this);
 		pm.registerEvent(Event.Type.PLAYER_QUIT , playerListener, Event.Priority.Monitor , this);
 		pm.registerEvent(Event.Type.WORLD_SAVE, worldListener, Event.Priority.Monitor, this);
@@ -73,6 +76,7 @@ public class timerank extends JavaPlugin
 		pm.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Event.Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Event.Priority.Monitor, this);
 		
+        //Make our data folder and try and prepare the config file.
 		new File(mainDirectory).mkdir();
 		new File(mainDirectory+File.separator+"data").mkdir();		
 		//loadPlaytime();
@@ -81,30 +85,39 @@ public class timerank extends JavaPlugin
 		loadConfig();		
 		//setupPermissions();
 		
+		//Get all players online and give them a start time. This is in case we are disabled/enabled after the server starts
 		for(Player p : getServer().getOnlinePlayers())
 		{
 			long now = System.currentTimeMillis();
 			StartTime.put(p.getName(),now);
 			loadPlaytime(p.getName());
 		}
+		
+		//Schedule our check event 
 		checker = new TimeRankChecker(this, checkInterval);
-		//getServer().getScheduler().scheduleAsyncRepeatingTask(this, checker, checkDelay, checkInterval);
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, checker, checkDelay, checkInterval);
 		
+		//Load what abilites were rented last time we were closed
 		RentedAbilities = new LinkedList<PurchasedAbility>();
 		loadRent();
+		
+		//All went well.
 		log.info("[Time Rank] Version " + this.getDescription().getVersion() + " Enabled.");
 	} 
 
-	public void onDisable(){ 				
+	public void onDisable(){
+		//Save play time and clear variables
 		savePlaytime();
+		saveRent();
 		permissionHandler=null;
 		Ranks.clear();
 		StartTime.clear();
 		PlayTime.clear();
+		RentedAbilities.clear();
+		
+		//stop our scheduled rank checker
 		getServer().getScheduler().cancelTasks(this);
-		log.info("[Time Rank] Disabled.");
-		saveRent();
+		log.info("[Time Rank] Disabled.");		
 	}
 	
 	private void loadConfig()
@@ -191,7 +204,7 @@ public class timerank extends JavaPlugin
 	}
 		
 	private void updateConfig()
-	{
+	{//read in the old config and output a new one.
 		config.load();
 		debug = config.getBoolean("settings.debug",false);				
 		hideUnavaible = config.getBoolean("settings.hideUnavaible",false);
@@ -265,7 +278,7 @@ public class timerank extends JavaPlugin
 	}
 	
 	private void saveConfig()
-	{
+	{//save all our settings to the config file.
 		config.setProperty("settings.debug", debug);
 		config.setProperty("settings.hideUnavaible", hideUnavaible);		
 		config.setProperty("settings.configVersion", 2);
@@ -312,15 +325,17 @@ public class timerank extends JavaPlugin
 		}
 		config.save();
 	}
-	public void setupPermissions() {
+	public void setupPermissions()
+	{
+		//Get the permissions plugin.
 		 Plugin permissionsPlugin = this.getServer().getPluginManager().getPlugin("Permissions");
 
-		    if (permissionHandler == null) {
-		        if (permissionsPlugin != null) {
+		    if (permissionHandler == null) {//check if we already have a handler
+		        if (permissionsPlugin != null) {//Make sure we found a permissions plugin
 		            permissionHandler = ((Permissions) permissionsPlugin).getHandler();
 		            UsePermissions = true;
 		            if (permissions.equalsIgnoreCase("Permissions3"))
-		            {
+		            {//Use permissions 3.x
 		            	try
 		            	{
 		            		perms = new com.oberonserver.perms.methods.Perm3(this);		            	
@@ -337,7 +352,7 @@ public class timerank extends JavaPlugin
 			    		}
 		            }
 		            else if (permissions.equalsIgnoreCase("GroupManager"))
-		            {
+		            {//Use group manager
 		            	Plugin gm = this.getServer().getPluginManager().getPlugin("GroupManager");
 		            	perms = new com.oberonserver.perms.methods.GM(this,gm);
 		            	log.info("[Time Rank] Using permissions GroupManger");
@@ -416,6 +431,7 @@ public class timerank extends JavaPlugin
 			}		
 			else if (cmd.getName().equalsIgnoreCase("buyrank"))
 			{
+				//Make sure a player is running the command.
 				if(!(sender instanceof Player))
 				{
 					log.info("This command must be run in game.");
@@ -424,6 +440,7 @@ public class timerank extends JavaPlugin
 				
 				if (args.length < 1)
 					return false;			
+				//Buy the rank
 				String rankname = args[0];
 				DebugPrint(player.getName() + " is trying to buy "+rankname);
 				BuyRank(player,rankname);
@@ -431,6 +448,7 @@ public class timerank extends JavaPlugin
 			}
 			else if (cmd.getName().equalsIgnoreCase("rentrank"))
 			{
+				//Make sure it is a player
 				if(!(sender instanceof Player))
 				{
 					log.info("This command must be run in game.");
@@ -438,7 +456,8 @@ public class timerank extends JavaPlugin
 				}
 				
 				if (args.length < 1)
-					return false;			
+					return false;	
+				//Rent out the rank
 				String rankname = args[0];
 				DebugPrint(player.getName() + " is trying to rent "+rankname);
 				RentRank(player,rankname);
@@ -446,6 +465,7 @@ public class timerank extends JavaPlugin
 			}
 			else if (cmd.getName().equalsIgnoreCase("listranks"))
 			{
+				//Set up the filter and page info
 				String sCmd ="";
 				int iPage=-1;
 				if (args.length > 0)
@@ -462,13 +482,17 @@ public class timerank extends JavaPlugin
 				
 				sender.sendMessage("§B---------------Rank List---------------");
 				for(Rank r : Ranks.keySet())
-				{													
+				{		
+					
+					//check to see if we hide groups we can't get.
 					if ( hideUnavaible )
 						if (!perms.inGroup(player,r.GetOldGroup().getWorld(), r.GetOldGroup().getName())&& !r.GetOldGroup().getName().equals(""))
 						{
 							DebugPrint("Hidding " + r.name + " from " + player.getName());
 							continue;
 						}
+					
+					//Check filters
 					if (sCmd.equalsIgnoreCase("time"))
 						if (r.time<=0)
 							continue;
@@ -480,6 +504,7 @@ public class timerank extends JavaPlugin
 					if (sCmd.equalsIgnoreCase("rent"))
 						if (r.rentCost<0)
 							continue;
+					//We are showing this one, so update page info
 					curItem +=1;
 					if (iPage >= 0)
 					{
@@ -489,6 +514,8 @@ public class timerank extends JavaPlugin
 							continue;
 					}
 					
+					
+					//Build the rank info string and display it
 					String msg="§A"+r.name + " - ";
 					
 					if (r.time>0)
@@ -512,6 +539,7 @@ public class timerank extends JavaPlugin
 			}
 			else if (cmd.getName().equalsIgnoreCase("timerank"))
 			{
+				//Check for no args. If no args, display basic info
 				if (args.length<1)
 				{
 					sender.sendMessage("§B---------------Time Rank---------------");
@@ -523,7 +551,7 @@ public class timerank extends JavaPlugin
 					return true;
 				}
 				else if (args[0].equalsIgnoreCase("reload"))
-				{
+				{//Reload the config file.
 					Ranks.clear();
 					Ranks = new HashMap<Rank, Long>();
 					loadConfig();
@@ -531,7 +559,7 @@ public class timerank extends JavaPlugin
 					return true;
 				}
 				else if (args[0].equalsIgnoreCase("groups"))
-				{
+				{//Show advanced listing of the groups.
 					String sCmd ="";
 					if (args.length > 1)
 						sCmd = args[1];	
@@ -566,7 +594,7 @@ public class timerank extends JavaPlugin
 					return true;
 				}
 				else if (args[0].equalsIgnoreCase("group"))
-				{
+				{//show a lot of info about 1 group.
 					if (args.length < 2)
 					{
 						sender.sendMessage("§CUseage: /timerank group <name>");
@@ -594,14 +622,14 @@ public class timerank extends JavaPlugin
 					}
 				}
 				else if (args[0].equalsIgnoreCase("set"))
-				{
+				{//change a config variable
 					if (args.length < 3)
-					{
+					{//make sure we have at least 3 args
 						sender.sendMessage("§CUseage: /timerank set <setting> <value>");
 						return true;
 					}
 					if (args[1].equalsIgnoreCase("debug"))
-					{
+					{//Set debug value
 						if (args[2].equalsIgnoreCase("true"))						
 							debug=true;							
 						else						
@@ -612,7 +640,7 @@ public class timerank extends JavaPlugin
 					return true;
 				}
 				else if (args[0].equalsIgnoreCase("test"))
-				{
+				{//Test command. This changes A LOT and can/will do whatever I'm trying to figure out at the moment.
 					Class<Rank> rClass = Rank.class;
 					Field[] methods = rClass.getFields();
 					for(Field f : methods)
@@ -635,13 +663,12 @@ public class timerank extends JavaPlugin
 				
 			}
 		}catch(Exception e)
-		{
+		{//Oops. Dump a bunch of data so we can figure out what caused the error.
 			Map<String,String>ErrorInfo = new LinkedHashMap<String,String>();
 			//CommandSender sender, Command cmd, String commandLabel, String[] args
 			ErrorInfo.put("Msg", "Error running command.");
-			ErrorInfo.put("CMD", cmd.toString());
-			ErrorInfo.put("Label", commandLabel);
-			ErrorInfo.put("CMD", cmd.toString());
+			ErrorInfo.put("CMD", cmd.getName());
+			ErrorInfo.put("Label", commandLabel);;
 			ErrorInfo.put("Arguments",Integer.toString(args.length));
 			ErrorInfo.put("Args",arrayToString(args, " "));
 			ErrorInfo.put("Trace",StracktraceToString(e));
@@ -652,7 +679,7 @@ public class timerank extends JavaPlugin
 	
 	
 	public long GetPlaytime(String player)
-	{
+	{//Get the play time of a single player and return it in milliseconds
 		long now = System.currentTimeMillis();
 		long login=0;
 		long total=0;
@@ -670,7 +697,7 @@ public class timerank extends JavaPlugin
 	}	
 	
 	public void saveRent()
-	{
+	{//Save our rented abilites to disk so we can load them later.
 		try {			
 			File path = new File(mainDirectory+File.separator+"data"+File.separator+"rent.data");
 			ObjectOutputStream obj = new ObjectOutputStream(new FileOutputStream(path.getPath()));
@@ -685,7 +712,7 @@ public class timerank extends JavaPlugin
 	
 	@SuppressWarnings("unchecked")
 	public void loadRent()
-	{ 		
+	{//Load who has rented what.
 		File path = new File(mainDirectory+File.separator+"data"+File.separator+"rent.data");
 	    if (path.exists())
 	    {
@@ -703,7 +730,7 @@ public class timerank extends JavaPlugin
 	}
 	
 	public void savePlaytime()
-	{
+	{//Save play time for everyone
 		for(String p : PlayTime.keySet())
 		{					
 			savePlaytime(p);
@@ -711,12 +738,12 @@ public class timerank extends JavaPlugin
 	}
 	
 	public void savePlaytime(Player p)
-	{
+	{//Save playtime for a single player.
 		savePlaytime(p.getName());
 	}
 	
 	public void savePlaytime(String name)
-	{
+	{//Save play time for a single players name.
 		String path;
 		Properties prop = new Properties(); //creates a new properties file	
 		try {
@@ -739,12 +766,12 @@ public class timerank extends JavaPlugin
 	}
 	
 	public void loadPlaytime(Player p)
-	{
+	{//Load play time for a player.
 		loadPlaytime(p.getName());
 	}
 	
 	public void loadPlaytime(String name)
-	{ 		
+	{ 	//Load play time for a single players name	
 		Properties prop = new Properties(); //creates a new properties file
 		File path = new File(mainDirectory+File.separator+"data"+File.separator+name);
 		if (path.exists())
@@ -774,7 +801,7 @@ public class timerank extends JavaPlugin
 	}
 	
 	public void ThrowSimpleError(Exception e,String msg)
-	{
+	{//Throw a simple error message using our nice formated error system with a single bit of txt to help describe it.
 		Map<String, String>ErrorInfo= new LinkedHashMap<String,String>();
 		ErrorInfo.put("Msg", msg);
 		ErrorInfo.put("Trace", StracktraceToString(e));		
@@ -782,27 +809,27 @@ public class timerank extends JavaPlugin
 	}
 	
 	public void ThrowSimpleError(Exception e)
-	{
+	{//throw a basic error in our nice formated error system.
 		Map<String, String>ErrorInfo = new LinkedHashMap<String,String>();
 		ErrorInfo.put("Trace", StracktraceToString(e));
 		ErrorLog(ErrorInfo);
 	}
 	
 	public String StracktraceToString(Exception e)	
-	{
+	{//Take a stack trace and return it in a string we can work with.
 		StringWriter sw = new StringWriter();
 		e.printStackTrace(new PrintWriter(sw));
 		return sw.toString();
 	}
 	
 	public void DebugPrint(String msg)
-	{
+	{//Print debug messages if debug is turned on.
 		if (debug)
 			log.info("[Time Rank] " + msg);
 	}	
 	
 	public void ErrorLog(Map<String, String> ErrorList)
-	{
+	{//A nicely formated error message for the console.
 		log.severe("===================================================");
 	    log.severe("=              ERROR REPORT START                 =");
 	    log.severe("===================================================");
@@ -838,7 +865,7 @@ public class timerank extends JavaPlugin
 	}
 
 	public void BuyRank(Player player, String rankname)
-	{		
+	{	//Given a player and a rank. Try to have that player buy that rank.	
 		DebugPrint("Looking for " + rankname);
 		for(Rank r : Ranks.keySet())
 		{
@@ -885,8 +912,10 @@ public class timerank extends JavaPlugin
 					else
 					{//use block id				
 						DebugPrint(rankname + " Using block "+ r.cost +" for cost");
-						ItemStack item = new ItemStack(r.cost, (int) r.amount);						
-						if (player.getInventory().contains(item))
+						ItemStack item = new ItemStack(r.cost, (int) r.amount);	
+						//right now the player must have exactly that item.
+						//Example: a stack of 5 gold bars instead of a stack of 10 gold bars.
+						if (ConsumeItems(player,item))
 						{
 							DebugPrint("You have the required items");															
 									switch(PromotePlayer(player,r))
@@ -968,7 +997,7 @@ public class timerank extends JavaPlugin
 					{//use block id				
 						DebugPrint(rankname + " Using block "+ r.rentCost +" for cost");
 						ItemStack item = new ItemStack(r.rentCost, (int) r.rentAmount);
-						if (player.getInventory().contains(item))
+						if (ConsumeItems(player,item))
 						{
 							DebugPrint("You have the required items");															
 									switch(PromotePlayer(player,r))
@@ -1224,7 +1253,8 @@ public class timerank extends JavaPlugin
 		replace.put("group.world",g.getWorld());		
 		return replace;
 	}
-	private Map<String,String>ProcessMsgVars(Rank r)	
+	private Map<String,String>ProcessMsgVars(Rank r)
+	
 	{
 		Map<String, String> replace = new HashMap<String, String>();		
 		replace.put("rank.group", r.GetGroup().getName());
@@ -1252,7 +1282,52 @@ public class timerank extends JavaPlugin
 		
 		return replace;
 	}
-	class TimeRankChecker implements Runnable {
+	private boolean ConsumeItems(Player player, ItemStack costStack)
+	{
+		//make sure we have enough
+		boolean hasEnough=false;
+		for (ItemStack invStack : player.getInventory().getContents())
+		{
+			if(invStack == null)
+				continue;
+			if (invStack.getTypeId() == costStack.getTypeId()) {
+
+				int inv = invStack.getAmount();
+				int cost = costStack.getAmount();
+				if (cost - inv >= 0) {
+					costStack.setAmount(cost - inv);
+					//player.getInventory().remove(invStack);
+				} else {
+					costStack.setAmount(0);
+					hasEnough=true;
+					break;
+				}			
+			}
+		}
+		//We don't have enough. Return false
+		if (!hasEnough) return false;
+		//We have enough, loop though again and consume.
+		for (ItemStack invStack : player.getInventory().getContents())
+		{
+			if(invStack == null)
+				continue;
+
+			if (invStack.getTypeId() == costStack.getTypeId()) {
+				int inv = invStack.getAmount();
+				int cost = costStack.getAmount();
+				if (cost - inv >= 0) {
+					costStack.setAmount(cost - inv);
+					player.getInventory().remove(invStack);
+				} else {
+					costStack.setAmount(0);
+					invStack.setAmount(inv - cost);
+					break;
+				}				
+			}
+		}
+		return true;		
+	}
+class TimeRankChecker implements Runnable {
 
 	    private timerank plugin;
 	    private final int interval;
