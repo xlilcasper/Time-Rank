@@ -86,8 +86,11 @@ public class GM implements PermMethod {
 	}
 	public boolean HasPermission(Player p, String PermissionNode)
 	{		
-		return getHandler().has(p,PermissionNode);
-		
+		return getHandler().has(p,PermissionNode);		
+	}
+	public boolean HasPermission(Player p, String PermissionNode, String world)
+	{		
+		return getHandler().has(world,p.getName(),PermissionNode);		
 	}
 	public boolean inGroup(Player p, String parentWorld, String parentName)
 	{		
