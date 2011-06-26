@@ -232,7 +232,7 @@ public class timerank extends JavaPlugin
 						ability.amount		= config.getDouble(node+".buy.amount", 1);
 						ability.minTime		= config.getInt(node+".buy.minTime", -1)*60*1000;				
 						ability.broadcast	= config.getBoolean(node+".buy.broadcast", true);
-						ability.msg		= config.getString(node+".buy.msg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
+						ability.msg		= config.getString(node+".buy.msg", "&B<player.name> &Ehas bought &B<ability.name>");
 					} else {
 						config.removeProperty(node+".buy.cost");
 						config.removeProperty(node+".buy");
@@ -248,8 +248,8 @@ public class timerank extends JavaPlugin
 						ability.rentMinTime	= config.getInt(node+".rent.minTime", -1)*60*1000;
 						ability.rentAmount		= config.getDouble(node+".rent.amount", 1);
 						ability.rentBroadcast	= config.getBoolean(node+".rent.broadcast", true);
-						ability.rentGainedMsg	= config.getString(node+".rent.gainedMsg", "&B<player.name> &Ehas been promoted to &B<rank.group>");
-						ability.rentLostMsg	= config.getString(node+".rent.lostMsg", "&B<player.name> &Ehas been demoted from &B<rank.group> &Eto &B<rank.oldgroup>.");
+						ability.rentGainedMsg	= config.getString(node+".rent.gainedMsg", "&B<player.name> &Ehas rented &B<ability.name>");
+						ability.rentLostMsg	= config.getString(node+".rent.lostMsg", "&B<player.name> &Ehas lost the &B<ability.name> ability");
 
 						iTime = config.getInt(node+".rent.time",-1);
 						lTime = (long)iTime * 60 * 1000;	
