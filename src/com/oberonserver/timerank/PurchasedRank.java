@@ -1,10 +1,10 @@
 package com.oberonserver.timerank;
 
-public class PurchasedAbility {
+public class PurchasedRank {
 	public String playername;
 	public Rank rank;
 	public long durationTicks=0;	
-	public PurchasedAbility(String p, Rank r)
+	public PurchasedRank(String p, Rank r)
 	{
 		playername=p;
 		rank=r;

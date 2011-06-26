@@ -51,7 +51,7 @@ public class timerank extends JavaPlugin
 	private final TimeRankServerListener serverListener = new TimeRankServerListener(this);	
 	public Map<String, Long> StartTime = new HashMap<String, Long>();
 	public Map<String, Long> PlayTime = new HashMap<String, Long>();
-	public List<PurchasedAbility> RentedAbilities;
+	public List<PurchasedRank> RentedAbilities;
 	public Map<Rank, Long> Ranks = new LinkedHashMap<Rank, Long>();	
 	public Method Method = null;
 	public PermMethod perms;
@@ -98,7 +98,7 @@ public class timerank extends JavaPlugin
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, checker, checkDelay, checkInterval);
 		
 		//Load what abilites were rented last time we were closed
-		RentedAbilities = new LinkedList<PurchasedAbility>();
+		RentedAbilities = new LinkedList<PurchasedRank>();
 		loadRent();
 		
 		//All went well.
@@ -718,7 +718,7 @@ public class timerank extends JavaPlugin
 	    {
 			try {
 				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
-				RentedAbilities = (List<PurchasedAbility>)obj.readObject();			
+				RentedAbilities = (List<PurchasedRank>)obj.readObject();			
 			} catch (FileNotFoundException e) {
 				ThrowSimpleError(e);
 			} catch (IOException e) {
@@ -970,7 +970,7 @@ public class timerank extends JavaPlugin
 							{
 							case 0://Everything went fine
 								Method.getAccount(player.getName()).subtract(r.rentAmount); //Consume money.								
-								RentedAbilities.add(new PurchasedAbility(player.getName(), r));
+								RentedAbilities.add(new PurchasedRank(player.getName(), r));
 								Map<String, String> replace = new HashMap<String, String>();				
 								replace.putAll(ProcessMsgVars(player));
 								replace.putAll(ProcessMsgVars(r));
@@ -1111,9 +1111,9 @@ public class timerank extends JavaPlugin
 
 	public void CheckRented(int interval)
 	{		
-		for (Iterator<PurchasedAbility> iter = RentedAbilities.iterator() ; iter.hasNext();)
+		for (Iterator<PurchasedRank> iter = RentedAbilities.iterator() ; iter.hasNext();)
 		{
-			PurchasedAbility pa = iter.next();
+			PurchasedRank pa = iter.next();
 			Player p = getServer().getPlayer(pa.playername);
 			if (p != null && p.isOnline())
 			{//player is online, remove some duration and check if we need to remove or not.
