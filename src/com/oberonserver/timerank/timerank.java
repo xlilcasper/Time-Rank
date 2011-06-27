@@ -677,8 +677,8 @@ public class timerank extends JavaPlugin
 				{//special case. We only want the categories.
 					HashSet<String> catlist =new HashSet<String>();					
 					for(String cat : cats)
-					{//color the catagory list before we display it.
-						cats.add("你"+cat+"佝");
+					{//color the category list before we display it.
+						catlist.add("你"+cat+"佝");
 					}					
 					sender.sendMessage("伯--------Abilities Categories--------");
 					sender.sendMessage("Categories: "+catlist.toString());
@@ -741,12 +741,17 @@ public class timerank extends JavaPlugin
 					if (ab.rentCost>0)
 						msg+="伯Rent: 你" +  ab.rentAmount+ " " + Material.getMaterial(ab.rentCost)+ " ";
 					if (ab.rentCost==0)
-						msg+="伯Rent: 你" +  Method.format(ab.rentAmount)+ " ";
-					if (ab.permission != "")
-						msg+="伯Requires perm: 你" +  ab.permission+ " ";
+						msg+="伯Rent: 你" +  Method.format(ab.rentAmount)+ " ";											
 					sender.sendMessage(msg);				
 					if (ab.desc != "")
 						sender.sendMessage("伯Description: 你"+ab.desc);
+					msg="";
+					HashSet<String> catlist =new HashSet<String>();					
+					for(String cat : cats)
+					{//color the category list before we display it.
+						catlist.add("你"+cat+"伯");
+					}	
+					sender.sendMessage("伯Categories: "+catlist.toString());
 				}
 				sender.sendMessage("伯-----------------------------------------");
 				return true;
