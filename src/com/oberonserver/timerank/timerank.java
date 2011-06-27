@@ -747,7 +747,7 @@ public class timerank extends JavaPlugin
 						sender.sendMessage("§BDescription: §A"+ab.desc);
 					msg="";
 					HashSet<String> catlist =new HashSet<String>();					
-					for(String cat : cats)
+					for(String cat : ab.Categories )
 					{//color the category list before we display it.
 						catlist.add("§A"+cat+"§B");
 					}	
