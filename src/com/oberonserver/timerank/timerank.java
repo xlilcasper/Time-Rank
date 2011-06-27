@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -659,7 +660,35 @@ public class timerank extends JavaPlugin
 				int perPage = 5;
 				int curItem = -1;
 				int startItem = ((iPage-1) * perPage);			
-
+				String catFilter="";
+				//Build a list of categories.
+				HashSet<String> cats =new HashSet<String>();
+				for(Ability ab : Abilities.keySet())
+				{
+					for(String cat : ab.Categories)
+					{
+						cats.add(cat);
+						if (sCmd.equalsIgnoreCase(cat))
+							catFilter=cat;
+					}
+				}
+				
+				if (sCmd.equalsIgnoreCase("cats"))
+				{//special case. We only want the categories.
+					HashSet<String> catlist =new HashSet<String>();					
+					for(String cat : cats)
+					{//color the catagory list before we display it.
+						cats.add("§A"+cat+"§F");
+					}					
+					sender.sendMessage("§B--------Abilities Categories--------");
+					sender.sendMessage("Categories: "+catlist.toString());
+					sender.sendMessage("§B-----------------------------------------");
+					return true;
+				}
+				
+				
+				
+				
 				sender.sendMessage("§B---------------Abilities List---------------");
 				for(Ability ab : Abilities.keySet())
 				{		
@@ -684,6 +713,11 @@ public class timerank extends JavaPlugin
 					if (sCmd.equalsIgnoreCase("rent"))
 						if (ab.rentCost<0)
 							continue;
+					if (catFilter!="") //we are filtering by category.
+						if (!ab.Categories.contains(catFilter))
+							continue;
+						
+					
 					//We are showing this one, so update page info
 					curItem +=1;
 					if (iPage >= 0)
