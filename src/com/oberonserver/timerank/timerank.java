@@ -109,7 +109,9 @@ public class timerank extends JavaPlugin
 		log.info("[Time Rank] Version " + this.getDescription().getVersion() + " Enabled.");
 	} 
 
-	public void onDisable(){
+	public void onDisable(){		
+		//stop our scheduled rank checker
+		getServer().getScheduler().cancelTasks(this);
 		//Save play time and clear variables
 		savePlaytime();
 		saveRent();
@@ -119,9 +121,7 @@ public class timerank extends JavaPlugin
 		StartTime.clear();
 		PlayTime.clear();
 		RentedAbilities.clear();
-		RentedRanks.clear();
-		//stop our scheduled rank checker
-		getServer().getScheduler().cancelTasks(this);
+		RentedRanks.clear();		
 		log.info("[Time Rank] Disabled.");		
 	}
 
@@ -858,6 +858,21 @@ public class timerank extends JavaPlugin
 					}
 					return true;
 				}
+				else if (args[0].equalsIgnoreCase("list"))
+				{
+					if (args[1].equalsIgnoreCase("rented"))
+					{
+						if (args[2].equalsIgnoreCase("abs"))
+						{
+							sender.sendMessage("§A-------------Rented Abilities-----------");
+							for (PurchasedAbility ra : RentedAbilities)
+							{								
+								sender.sendMessage("§APlayer: "+ ra.playername +" Ability: "+ra.ability.name+" Ticks: "+Mills2Time(ra.durationTicks*50));
+							}
+						}
+					}
+					return true;
+				}
 				else if (args[0].equalsIgnoreCase("test"))
 				{//Test command. This changes A LOT and can/will do whatever I'm trying to figure out at the moment.
 					for(Ability ab : Abilities.keySet())
@@ -955,6 +970,7 @@ public class timerank extends JavaPlugin
 		path = new File(mainDirectory+File.separator+"data"+File.separator+"rentability.data");
 		if (path.exists())
 		{
+			DebugPrint("Loading rented abilities");
 			try {
 				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
 				RentedAbilities = (List<PurchasedAbility>)obj.readObject();			
@@ -1268,6 +1284,7 @@ public class timerank extends JavaPlugin
 				}//end check to see if we can buy this
 			}//end check of rank name
 		}
+		saveRent();
 	}
 
 	public void BuyAbility(Player player, String abilityname)
@@ -1435,6 +1452,7 @@ public class timerank extends JavaPlugin
 				}//end check to see if we can buy this
 			}//end check of rank name
 		}
+		saveRent();
 	}
 	
 	public int PromotePlayer(Player p, Rank r)
