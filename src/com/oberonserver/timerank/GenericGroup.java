@@ -1,6 +1,12 @@
 package com.oberonserver.timerank;
 
-public class GenericGroup {
+import java.io.Serializable;
+
+public class GenericGroup implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private String name="";
 	private String world="";
 	public GenericGroup(String sWorld, String sName)

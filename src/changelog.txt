@@ -1,3 +1,9 @@
+Version 0.1.0b
+	Fixed serializable bug so we could save rented abilities.
+	
+Version 0.1.0a
+	Fixed bug where only the first permission node was added.
+	
 Version 0.1.0
 	Fixed null pointer error when rent was present but empty.
 	Added ability to earn/buy/rent abilities and permission nodes.

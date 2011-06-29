@@ -1,11 +1,16 @@
 package com.oberonserver.timerank;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
 import com.oberonserver.perms.PermMethod;
 
-public class Ability {
+public class Ability implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public String permission="";
 	public String desc="";
 	public String world="*";

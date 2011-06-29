@@ -1,6 +1,12 @@
 package com.oberonserver.timerank;
 
-public class PurchasedAbility {	
+import java.io.Serializable;
+
+public class PurchasedAbility  implements Serializable{	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public String playername;
 	public Ability ability;
 	public long durationTicks=0;	

@@ -860,22 +860,17 @@ public class timerank extends JavaPlugin
 				}
 				else if (args[0].equalsIgnoreCase("test"))
 				{//Test command. This changes A LOT and can/will do whatever I'm trying to figure out at the moment.
-					Class<Rank> rClass = Rank.class;
-					Field[] methods = rClass.getFields();
-					for(Field f : methods)
-					{
-						for(Rank r : Ranks.keySet())
+					for(Ability ab : Abilities.keySet())
+					{				
+						if (ab.name.equalsIgnoreCase(args[1]))
 						{
-							try {
-								DebugPrint(r.name + ":" + f.getName() + " = " + f.get(r));
-							} catch (IllegalArgumentException e) {
-								ThrowSimpleError(e);
-							} catch (IllegalAccessException e) {
-								ThrowSimpleError(e);
+							for(String node : ab.Nodes)
+							{
+								sender.sendMessage("§ANodes: "+node);
 							}
+
 						}
 					}
-
 					return true;
 				}
 
@@ -947,7 +942,7 @@ public class timerank extends JavaPlugin
 		{
 			try {
 				ObjectInputStream obj = new ObjectInputStream(new FileInputStream(path.getPath()));
-				RentedRanks = (List<PurchasedRank>)obj.readObject();			
+				RentedRanks = (List<PurchasedRank>)obj.readObject();	
 			} catch (FileNotFoundException e) {
 				ThrowSimpleError(e);
 			} catch (IOException e) {
@@ -1503,8 +1498,8 @@ public class timerank extends JavaPlugin
 			//everything looks good. Lets promote!	
 			for(String node : ab.Nodes)
 			{							
-				perms.AddNode(p, node, ab.world);
-				break;				
+				DebugPrint("AddPlayerNode: " + p.getName() + " gained " + node + " in world " + ab.world);
+				perms.AddNode(p, node, ab.world);			
 			}
 			
 			return 0;													
