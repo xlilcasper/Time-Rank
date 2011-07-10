@@ -280,7 +280,7 @@ public class timerank extends JavaPlugin
 	{//read in the old config and output a new one.
 		config.load();
 		debug = config.getBoolean("settings.debug",false);				
-		hideUnavaible = config.getBoolean("settings.hideUnavaible",false);
+		hideUnavaible = config.getBoolean("settings.hideUnavaible",false);		
 		List<String> keys = config.getKeys("ranks");
 		DebugPrint("Keys size "+Integer.toString(keys.size()));
 		//load old config
@@ -362,8 +362,8 @@ public class timerank extends JavaPlugin
 
 			config.setProperty(node+".group", rank.GetGroup().getName());
 			config.setProperty(node+".world", rank.GetGroup().getWorld());
-			config.setProperty(node+".oldgroup", rank.GetOldGroup().getName());
-
+			config.setProperty(node+".oldgroup", rank.GetOldGroupNames());
+			
 			config.setProperty(node+".time", rank.time/60/1000);
 			if (rank.cost > -1)
 			{
@@ -559,7 +559,7 @@ public class timerank extends JavaPlugin
 
 					//check to see if we hide groups we can't get.
 					if ( hideUnavaible )
-						if (!perms.inGroup(player,r.GetOldGroup().getWorld(), r.GetOldGroup().getName())&& !r.GetOldGroup().getName().equals(""))
+						if (!r.inOldGroup(perms, player) && !r.hasOldGroup())
 						{
 							DebugPrint("Hidding " + r.name + " from " + player.getName());
 							continue;
@@ -601,8 +601,8 @@ public class timerank extends JavaPlugin
 						msg+="伯Rent: 你" +  r.rentAmount+ " " + Material.getMaterial(r.rentCost)+ " ";
 					if (r.rentCost==0)
 						msg+="伯Rent: 你" +  Method.format(r.rentAmount)+ " ";
-					if (r.GetOldGroup() != null)
-						msg+="伯Requires group: 你" +  r.GetOldGroup().getName()+ " ";
+					if (r.hasOldGroup())
+						msg+="伯Requires group: 你" +  r.strOldGroups() + " ";
 					sender.sendMessage(msg);				
 					if (r.desc != "")
 						sender.sendMessage("伯Description: 你"+r.desc);
@@ -805,8 +805,8 @@ public class timerank extends JavaPlugin
 						if (r.cost==0)
 							msg+="伯Cost: 你" + Method.format(r.amount)+ " ";
 						msg+="伯Group: 你" + r.GetGroup().getName()+ " ";
-						if (r.GetOldGroup() != null)
-							msg+="伯Requires group: 你" +  r.GetOldGroup().getName()+ " ";				
+						if (r.hasOldGroup())
+							msg+="伯Requires group: 你" +  r.strOldGroups()+ " ";				
 						sender.sendMessage(msg);				
 					}
 					sender.sendMessage("伯-----------------------------------------");
@@ -832,8 +832,8 @@ public class timerank extends JavaPlugin
 							if (r.cost==0)
 								msg+="伯Cost: 你" +  Method.format(r.amount)+ " ";
 							msg+="伯Group: 你" +  r.GetGroup().getName()+ " ";
-							if (r.GetOldGroup() != null)
-								msg+="伯Requires group: 你" +  r.GetOldGroup().getName()+ " ";					
+							if (r.hasOldGroup())
+								msg+="伯Requires group: 你" +  r.strOldGroups()+ " ";					
 							sender.sendMessage(msg);									
 						}
 						sender.sendMessage("伯-----------------------------------------");
@@ -1151,7 +1151,7 @@ public class timerank extends JavaPlugin
 									player.sendMessage(msg);
 								break;
 							case 1://Not in old group
-								player.sendMessage("You need to be in " + r.GetOldGroup().getName() + " to be buy the rank "+r.name);
+								player.sendMessage("You need to be in " + r.strOldGroups() + " to be buy the rank "+r.name);
 								break;
 							case 2:
 								player.sendMessage("You are already in " + r.GetGroup().getName() +" which " + r.name + " grants.");
@@ -1187,7 +1187,7 @@ public class timerank extends JavaPlugin
 									player.sendMessage(msg);
 								break;
 							case 1://Not in old group
-								player.sendMessage("You need to be in " + r.GetOldGroup().getName() + " to be buy the rank "+r.name);
+								player.sendMessage("You need to be in " + r.strOldGroups() + " to be buy the rank "+r.name);
 								break;
 							case 2:
 								player.sendMessage("You are already in " + r.GetGroup().getName() +" which " + r.name + " grants.");
@@ -1236,7 +1236,7 @@ public class timerank extends JavaPlugin
 									player.sendMessage(msg);
 								break;
 							case 1://Not in old group
-								player.sendMessage("You need to be in " + r.GetOldGroup().getName() + " to be buy the rank "+r.name);
+								player.sendMessage("You need to be in " + r.strOldGroups() + " to be buy the rank "+r.name);
 								break;
 							case 2:
 								player.sendMessage("You are already in " + r.GetGroup().getName() +" which " + r.name + " grants.");
@@ -1269,7 +1269,7 @@ public class timerank extends JavaPlugin
 									player.sendMessage(msg);
 								break;
 							case 1://Not in old group
-								player.sendMessage("You need to be in " + r.GetOldGroup().getName() + " to be buy the rank "+r.name);
+								player.sendMessage("You need to be in " + r.strOldGroups() + " to be buy the rank "+r.name);
 								break;
 							case 2:
 								player.sendMessage("You are already in " + r.GetGroup() +" which " + r.name + " grants.");
@@ -1463,21 +1463,28 @@ public class timerank extends JavaPlugin
 		if (!perms.inGroup(p, r.GetGroup().getWorld(),r.GetGroup().getName()))
 		{//if we are not in the group check to see if we are in the old/leser.
 			DebugPrint("PromotePlayer: " + p.getName() + " is not in group " + r.GetGroup().getName() + " yet.");
-			if (r.GetOldGroup() != null)
+			if (r.hasOldGroup())
 			{	
-				if (!perms.inGroup(p,r.GetOldGroup().getWorld(), r.GetOldGroup().getName()))				
+				boolean inGroup = r.inOldGroup(perms, p); 
+				DebugPrint("In Group: " +r.strOldGroups() + ":"+r.GetGroup().getWorld() + inGroup);
+				if (!inGroup)		
 					return 1;
 				//we are in the old/lesser group. See if we have enough time to promote.	
-				DebugPrint("PromotePlayer: " + p.getName() + " is in old group " + r.GetOldGroup().getName() + ".");					
+				DebugPrint("PromotePlayer: " + p.getName() + " is in old group " + r.strOldGroups() + ".");					
 			}	
 
 			DebugPrint("PromotePlayer: " + p.getName() + " is ready to be promoted.");
 			//everything looks good. Lets promote!				
 			perms.AddGroup(p, r.GetGroup().getWorld(),r.GetGroup().getName());	
 
-			if (r.remove && r.GetOldGroup() != null)
-				perms.RemoveGroup(p.getWorld().getName(),p.getName(), r.GetOldGroup().getWorld(),r.GetOldGroup().getName());
-			//getServer().broadcastMessage(ChatColor.AQUA + p.getName() + ChatColor.YELLOW + " has been promoted to " + ChatColor.AQUA + r.GetGroup().getName());
+			if (r.remove && r.hasOldGroup())
+			{
+				for(GenericGroup curGroup: r.GetOldGroup() )
+				{
+					if (perms.inGroup(p, curGroup.getWorld(), curGroup.getName()))
+						perms.RemoveGroup(p.getWorld().getName(), p.getName(), curGroup.getWorld(), curGroup.getName());
+				}
+			}
 			return 0;													
 		}
 		else
@@ -1575,7 +1582,7 @@ public class timerank extends JavaPlugin
 						p.sendMessage(msg);
 					return true;			
 				case 1:
-					DebugPrint("CheckRanks: " + p.getName() + " is not in " + r.GetOldGroup().getName());
+					DebugPrint("CheckRanks: " + p.getName() + " is not in " + r.strOldGroups());
 					break;					
 				case 2:
 					DebugPrint("CheckRanks: " + p.getName() + " is already in " + r.GetGroup().getName());
@@ -1600,8 +1607,13 @@ public class timerank extends JavaPlugin
 				if (pa.durationTicks <= 0)
 				{//Rent ran out. Demote back to orginal group.
 					DebugPrint("Demoting " + p.getName());
-					perms.RemoveGroup(p.getWorld().getName(), p.getName(), pa.rank.GetOldGroup().getWorld(), pa.rank.GetOldGroup().getName());
-					if (pa.rank.rentReturn && pa.rank.GetOldGroup() != null)
+					for(GenericGroup curGroup: pa.rank.GetOldGroup() )
+					{
+						if (perms.inGroup(p, curGroup.getWorld(), curGroup.getName()))
+							perms.RemoveGroup(p.getWorld().getName(), p.getName(), curGroup.getWorld(), curGroup.getName());
+					}
+					
+					if (pa.rank.rentReturn && pa.rank.hasOldGroup())
 						perms.AddGroup(p, pa.rank.GetGroup().getWorld(), pa.rank.GetGroup().getName());
 					Map<String, String> replace = new HashMap<String, String>();				
 					replace.putAll(ProcessMsgVars(p));
@@ -1803,8 +1815,8 @@ public class timerank extends JavaPlugin
 	{
 		Map<String, String> replace = new HashMap<String, String>();		
 		replace.put("rank.group", r.GetGroup().getName());
-		if (r.GetOldGroup() != null)
-			replace.put("rank.oldgroup", r.GetOldGroup().getName());
+		if (r.hasOldGroup())
+			replace.put("rank.oldgroup", r.strOldGroups());
 		else
 			replace.put("rank.oldgroup", "");
 		replace.put("rank.world",r.GetGroup().getWorld());	

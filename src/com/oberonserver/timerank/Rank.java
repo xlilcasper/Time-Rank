@@ -1,6 +1,13 @@
 package com.oberonserver.timerank;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.bukkit.entity.Player;
+
+import com.oberonserver.perms.PermMethod;
 
 public class Rank implements Serializable{
 	/**
@@ -8,7 +15,7 @@ public class Rank implements Serializable{
 	 */
 	private static final long serialVersionUID = 1L;
 	private GenericGroup group;
-	private GenericGroup oldgroup;
+	private List<GenericGroup> oldgroup;
 	public String desc="";
 	public long time=-1;
 	public int cost=-1;	
@@ -41,9 +48,29 @@ public class Rank implements Serializable{
 	{
 		SetGroup(gGroup);
 		if (gOldGroup != null)
-			SetOldGroup(gOldGroup);
+			AddOldGroup(gOldGroup);
 		remove=bRemove;
 		name=sName;
+	}
+	
+	public List<String> GetOldGroupNames()
+	{
+		List<String> names = new LinkedList<String>();
+		for(GenericGroup curGroup: oldgroup )
+		{
+			names.add(curGroup.getName());
+		}
+		return names;
+	}	
+	
+	public String strOldGroups()
+	{
+		List<String> names = new ArrayList<String>();
+		for(GenericGroup curGroup: oldgroup )
+		{
+			names.add(curGroup.getName());
+		}
+		return arrayToString((String[]) names.toArray(),",");
 	}
 	
 	public Boolean SetGroup(String sWorld, String sGroup)
@@ -75,21 +102,56 @@ public class Rank implements Serializable{
 		try
 		{
 			GenericGroup gGroup =  new GenericGroup(sWorld,sGroup);
-			return SetOldGroup(gGroup);		
+			return AddOldGroup(gGroup);		
 		}catch(Exception e){
 			e.printStackTrace();
 			return false;
 		}
 		
 	}
-	public Boolean SetOldGroup(GenericGroup gGroup)
+	public Boolean AddOldGroup(GenericGroup gGroup)
 	{
-		oldgroup = gGroup;
+		oldgroup.add(gGroup);
+		return true;
+	}
+	public Boolean RemoveOldGroup(GenericGroup gGroup)
+	{
+		oldgroup.remove(gGroup);
 		return true;
 	}
 	
-	public GenericGroup GetOldGroup()
+	public List<GenericGroup> GetOldGroup()
 	{
 		return oldgroup;
 	}	
+	
+	public boolean hasOldGroup()
+	{
+		return !oldgroup.isEmpty();
+	}
+	
+	public boolean inOldGroup(PermMethod perms, Player player)
+	{
+		for(GenericGroup curGroup: oldgroup )
+		{
+			if (perms.inGroup(player,curGroup.getWorld(), curGroup.getName()))
+			{
+				return true;
+			}
+		}
+		return false;
+		
+	}
+	
+	public static String arrayToString(String[] a, String separator) {
+		StringBuffer result = new StringBuffer();
+		if (a.length > 0) {
+			result.append(a[0]);
+			for (int i=1; i<a.length; i++) {
+				result.append(separator);
+				result.append(a[i]);
+			}
+		}
+		return result.toString();
+	}
 }
